@@ -1,18 +1,57 @@
 import { Dithering } from "@paper-design/shaders-react";
 import { useEffect, useState } from "react";
 
+type ShaderPreferences = {
+  reduceMotion: boolean;
+  reduceData: boolean;
+  compactViewport: boolean;
+};
+
+const motionQuery = "(prefers-reduced-motion: reduce)";
+const dataQuery = "(prefers-reduced-data: reduce)";
+const compactQuery = "(max-width: 700px)";
+
+function readShaderPreferences(): ShaderPreferences {
+  if (typeof window === "undefined") {
+    return {
+      reduceMotion: true,
+      reduceData: false,
+      compactViewport: false,
+    };
+  }
+
+  return {
+    reduceMotion: window.matchMedia(motionQuery).matches,
+    reduceData: window.matchMedia(dataQuery).matches,
+    compactViewport: window.matchMedia(compactQuery).matches,
+  };
+}
+
 export function DitherField() {
-  const [reduceMotion, setReduceMotion] = useState(false);
+  const [preferences, setPreferences] = useState(readShaderPreferences);
 
   useEffect(() => {
-    const preference = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const updatePreference = () => setReduceMotion(preference.matches);
+    const queries = [
+      window.matchMedia(motionQuery),
+      window.matchMedia(dataQuery),
+      window.matchMedia(compactQuery),
+    ];
+    const updatePreferences = () =>
+      setPreferences(readShaderPreferences());
 
-    updatePreference();
-    preference.addEventListener("change", updatePreference);
+    for (const query of queries) {
+      query.addEventListener("change", updatePreferences);
+    }
 
-    return () => preference.removeEventListener("change", updatePreference);
+    return () => {
+      for (const query of queries) {
+        query.removeEventListener("change", updatePreferences);
+      }
+    };
   }, []);
+
+  const shouldAnimate =
+    !preferences.reduceMotion && !preferences.reduceData;
 
   return (
     <div className="dither-field" aria-hidden="true">
@@ -26,8 +65,11 @@ export function DitherField() {
         type="8x8"
         size={2}
         scale={1.15}
-        speed={reduceMotion ? 0 : 0.16}
-        maxPixelCount={1_500_000}
+        speed={shouldAnimate ? 0.14 : 0}
+        minPixelRatio={1}
+        maxPixelCount={
+          preferences.compactViewport ? 650_000 : 1_200_000
+        }
       />
     </div>
   );

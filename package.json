@@ -14,7 +14,6 @@
   "dependencies": {
     "@paper-design/shaders": "0.0.77",
     "@paper-design/shaders-react": "0.0.77",
-    "motion": "12.42.2",
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "thinking-orbs": "0.1.1"

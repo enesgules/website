@@ -1,134 +1,144 @@
-import {
-  AnimatePresence,
-  motion,
-  useReducedMotion,
-  type Transition,
-} from "motion/react";
-import { useState } from "react";
+import { lazy, Suspense, useState } from "react";
 import { ThinkingOrb } from "thinking-orbs";
-import { DitherField } from "./DitherField";
 
-const splitTransition = {
-  type: "spring",
-  duration: 0.55,
-  bounce: 0,
-} satisfies Transition;
+const DitherField = lazy(() =>
+  import("./DitherField").then((module) => ({
+    default: module.DitherField,
+  })),
+);
 
-const revealTransition = {
-  duration: 0.28,
-  ease: [0.23, 1, 0.32, 1],
-} satisfies Transition;
+function canUseWebGl() {
+  if (typeof document === "undefined") {
+    return false;
+  }
 
-const exitTransition = {
-  duration: 0.18,
-  ease: [0.4, 0, 1, 1],
-} satisfies Transition;
+  const canvas = document.createElement("canvas");
+  const context =
+    canvas.getContext("webgl2") ?? canvas.getContext("webgl");
 
-const instantTransition = {
-  duration: 0,
-} satisfies Transition;
+  context?.getExtension("WEBGL_lose_context")?.loseContext();
+
+  return context !== null;
+}
 
 export function WordmarkStage() {
   const [isOpen, setIsOpen] = useState(false);
-  const shouldReduceMotion = useReducedMotion() === true;
-  const nameTransition = shouldReduceMotion
-    ? instantTransition
-    : splitTransition;
-
-  const leftTransform =
-    isOpen
-      ? "translate3d(calc(0px - var(--wordmark-split-distance)), 0, 0)"
-      : "translate3d(0, 0, 0)";
-  const rightTransform =
-    isOpen
-      ? "translate3d(var(--wordmark-split-distance), 0, 0)"
-      : "translate3d(0, 0, 0)";
+  const [canRenderShader] = useState(canUseWebGl);
 
   return (
-    <main className="wordmark-stage" aria-labelledby="page-title">
+    <main
+      className="wordmark-stage"
+      data-open={isOpen}
+      aria-labelledby="page-title"
+    >
       <h1 className="visually-hidden" id="page-title">
-        Enes Gules, also known as Abdush
+        Abdullah Enes Gules, software engineer at Upstash building Context7
       </h1>
 
-      <DitherField />
+      <Suspense
+        fallback={
+          <div
+            className="dither-field dither-field--fallback"
+            aria-hidden="true"
+          />
+        }
+      >
+        {canRenderShader ? (
+          <DitherField />
+        ) : (
+          <div
+            className="dither-field dither-field--fallback"
+            aria-hidden="true"
+          />
+        )}
+      </Suspense>
 
-      <div className="wordmark">
-        <div className="wordmark__orb-anchor">
-          <motion.button
-            className="wordmark__orb"
-            type="button"
-            aria-label={isOpen ? "Close nickname" : "Reveal nickname"}
-            aria-pressed={isOpen}
-            onClick={() => setIsOpen((open) => !open)}
-            whileTap={{ transform: "scale(0.96)" }}
-            transition={{ duration: 0.14 }}
-          >
+      <div className="identity-control">
+        <button
+          className="identity-toggle"
+          type="button"
+          aria-label={isOpen ? "Close introduction" : "Meet Abdush"}
+          aria-pressed={isOpen}
+          onClick={() => setIsOpen((open) => !open)}
+        >
+          <span className="identity-toggle__orb">
             <ThinkingOrb
-              state={isOpen ? "listening" : "composing"}
+              state={isOpen ? "solving" : "shaping"}
               size={64}
               theme="dark"
               speed={0.72}
+              aria-hidden="true"
               style={{ width: "64%", height: "64%" }}
             />
-          </motion.button>
-        </div>
+          </span>
 
-        <AnimatePresence initial={false}>
-          {isOpen ? (
-            <motion.span
-              className="wordmark__nickname"
-              initial={{
-                clipPath: shouldReduceMotion
-                  ? "inset(0% 0 0% 0)"
-                  : "inset(48% 0 48% 0)",
-                opacity: 0,
-                transform: shouldReduceMotion
-                  ? "none"
-                  : "translate3d(0, 10%, 0) scaleX(0.92)",
-              }}
-              animate={{
-                clipPath: "inset(0% 0 0% 0)",
-                opacity: 1,
-                transform: "translate3d(0, 0, 0) scaleX(1)",
-              }}
-              exit={{
-                clipPath: shouldReduceMotion
-                  ? "inset(0% 0 0% 0)"
-                  : "inset(48% 0 48% 0)",
-                opacity: 0,
-                transform: shouldReduceMotion
-                  ? "none"
-                  : "translate3d(0, 4%, 0) scaleX(0.96)",
-                transition: exitTransition,
-              }}
-              transition={revealTransition}
-              aria-hidden="true"
-            >
-              abdush
-            </motion.span>
-          ) : null}
-        </AnimatePresence>
+          <span className="identity-toggle__labels" aria-hidden="true">
+            <span className="identity-toggle__label identity-toggle__label--closed">
+              meet abdush
+            </span>
+            <span className="identity-toggle__label identity-toggle__label--open">
+              close
+            </span>
+          </span>
+        </button>
+      </div>
+
+      <div className="wordmark" aria-hidden="true">
+        <span className="wordmark__nickname">abdush</span>
 
         <div className="wordmark__name">
-          <motion.span
-            className="wordmark__half"
-            animate={{ transform: leftTransform }}
-            transition={nameTransition}
-            aria-hidden="true"
-          >
-            enes
-          </motion.span>
-          <motion.span
-            className="wordmark__right"
-            animate={{ transform: rightTransform }}
-            transition={nameTransition}
-          >
-            <span className="wordmark__half" aria-hidden="true">
-              gules
-            </span>
-          </motion.span>
+          <span className="wordmark__half wordmark__half--left">enes</span>
+          <span className="wordmark__half wordmark__half--right">gules</span>
         </div>
       </div>
+
+      <footer className="identity-rail">
+        <div className="identity-rail__intro">
+          <p>
+            I build{" "}
+            <a
+              href="https://context7.com"
+              target="_blank"
+              rel="noreferrer"
+            >
+              Context7
+            </a>{" "}
+            at{" "}
+            <a href="https://upstash.com" target="_blank" rel="noreferrer">
+              Upstash
+            </a>
+            .
+          </p>
+          <p className="identity-rail__meta">
+            software engineer · istanbul
+          </p>
+        </div>
+
+        <nav className="identity-links" aria-label="Find Enes online">
+          <a
+            href="https://github.com/enesgules"
+            target="_blank"
+            rel="noreferrer"
+          >
+            github <span aria-hidden="true">↗</span>
+          </a>
+          <a
+            href="https://www.linkedin.com/in/abdullah-enes-gules"
+            target="_blank"
+            rel="noreferrer"
+          >
+            linkedin <span aria-hidden="true">↗</span>
+          </a>
+          <a
+            href="https://x.com/abdushbag"
+            target="_blank"
+            rel="noreferrer"
+          >
+            x <span aria-hidden="true">↗</span>
+          </a>
+          <a href="mailto:abdullah.enes.gules@gmail.com">email</a>
+        </nav>
+      </footer>
     </main>
   );
 }
