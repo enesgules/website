@@ -12,6 +12,9 @@
     "deploy": "pnpm build && wrangler deploy"
   },
   "dependencies": {
+    "@base-ui/react": "^1.6.0",
+    "@hugeicons/core-free-icons": "^4.2.3",
+    "@hugeicons/react": "^1.1.9",
     "@paper-design/shaders": "0.0.77",
     "@paper-design/shaders-react": "0.0.77",
     "react": "19.2.8",

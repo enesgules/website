@@ -1,7 +1,9 @@
+import {
+  HeadphoneMuteIcon,
+  HeadphonesIcon,
+} from "@hugeicons/core-free-icons";
 import { useEffect, useRef, useState } from "react";
-import type { BackgroundAudioConfig } from "../config/backgroundAudio";
-
-type BackgroundAudioProps = BackgroundAudioConfig;
+import { PageControl, PageControlIcon } from "./ui/PageControl";
 
 type PlaybackState = "paused" | "loading" | "playing" | "error";
 
@@ -11,6 +13,9 @@ type AnimationFrameRef = {
 
 const fadeInDuration = 480;
 const fadeOutDuration = 280;
+const audioSource = "/audio/background.mp3";
+const audioLabel = "Background music";
+const audioVolume = 0.28;
 
 function cancelFade(frameRef: AnimationFrameRef) {
   if (frameRef.current === null) {
@@ -40,7 +45,10 @@ function fadeVolume({
   const startedAt = performance.now();
 
   function updateVolume(now: number) {
-    const progress = Math.min((now - startedAt) / duration, 1);
+    const progress = Math.min(
+      Math.max((now - startedAt) / duration, 0),
+      1,
+    );
     const easedProgress = 1 - Math.pow(1 - progress, 3);
 
     audio.volume =
@@ -58,12 +66,7 @@ function fadeVolume({
   frameRef.current = requestAnimationFrame(updateVolume);
 }
 
-export function BackgroundAudio({
-  enabled,
-  label,
-  src,
-  volume,
-}: BackgroundAudioProps) {
+export function BackgroundAudio() {
   const audioRef = useRef<HTMLAudioElement>(null);
   const fadeFrameRef = useRef<number | null>(null);
   const [playback, setPlayback] =
@@ -77,10 +80,6 @@ export function BackgroundAudio({
       audio?.pause();
     };
   }, []);
-
-  if (!enabled) {
-    return null;
-  }
 
   const isPlaying = playback === "playing";
   const isUnavailable = playback === "error";
@@ -115,7 +114,7 @@ export function BackgroundAudio({
         audio,
         duration: fadeInDuration,
         frameRef: fadeFrameRef,
-        target: volume,
+        target: audioVolume,
       });
     } catch {
       setPlayback("error");
@@ -123,36 +122,29 @@ export function BackgroundAudio({
   }
 
   const actionLabel = isUnavailable
-    ? `${label} unavailable`
+    ? `${audioLabel} unavailable`
     : isPlaying
-      ? `Pause ${label.toLowerCase()}`
-      : `Play ${label.toLowerCase()}`;
+      ? `Turn ${audioLabel.toLowerCase()} off`
+      : `Turn ${audioLabel.toLowerCase()} on`;
 
   return (
-    <div className="background-audio">
+    <>
       <audio
         ref={audioRef}
-        src={src}
+        src={audioSource}
         loop
         preload="none"
         onError={() => setPlayback("error")}
       />
-      <button
-        className="background-audio__toggle"
-        type="button"
-        aria-label={actionLabel}
+      <PageControl
+        label={actionLabel}
         aria-pressed={isPlaying}
-        data-playing={isPlaying}
         disabled={playback === "loading" || isUnavailable}
         onClick={togglePlayback}
       >
-        <span>{isUnavailable ? "Music unavailable" : "Music"}</span>
-        <span className="background-audio__meter" aria-hidden="true">
-          <span />
-          <span />
-          <span />
-        </span>
-      </button>
-    </div>
+        <PageControlIcon active={!isPlaying} icon={HeadphoneMuteIcon} />
+        <PageControlIcon active={isPlaying} icon={HeadphonesIcon} />
+      </PageControl>
+    </>
   );
 }

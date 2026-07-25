@@ -3,7 +3,16 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#f6f6f3" />
+    <meta
+      name="theme-color"
+      content="#f6f6f3"
+      media="(prefers-color-scheme: light)"
+    />
+    <meta
+      name="theme-color"
+      content="#101411"
+      media="(prefers-color-scheme: dark)"
+    />
     <meta name="author" content="Abdullah Enes Gules" />
     <meta
       name="description"
@@ -19,14 +28,25 @@
     />
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Enes Gules" />
-    <meta property="og:url" id="og-url" />
-    <meta property="og:image" id="og-image" content="/og-image.png" />
+    <meta property="og:locale" content="en_US" />
+    <meta
+      property="og:url"
+      content="https://enesgules.enesgules.workers.dev/"
+    />
+    <meta
+      property="og:image"
+      content="https://enesgules.enesgules.workers.dev/og-image.png?v=6"
+    />
+    <meta
+      property="og:image:secure_url"
+      content="https://enesgules.enesgules.workers.dev/og-image.png?v=6"
+    />
     <meta property="og:image:type" content="image/png" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
     <meta
       property="og:image:alt"
-      content="Abdullah Enes Gules, Software Engineer, on a softly dithered background."
+      content="Abdullah Enes Gules, Software Engineer, with a profile photograph and social links."
     />
     <meta name="twitter:card" content="summary_large_image" />
     <meta
@@ -39,28 +59,30 @@
     />
     <meta
       name="twitter:image"
-      id="twitter-image"
-      content="/og-image.png"
+      content="https://enesgules.enesgules.workers.dev/og-image.png?v=6"
     />
     <meta
       name="twitter:image:alt"
-      content="Abdullah Enes Gules, Software Engineer, on a softly dithered background."
+      content="Abdullah Enes Gules, Software Engineer, with a profile photograph and social links."
     />
-    <link rel="canonical" id="canonical-url" />
-    <script>
-      const siteUrl = `${window.location.origin}/`;
-      const socialImageUrl = new URL("/og-image.png", siteUrl).href;
-
-      document
-        .getElementById("canonical-url")
-        ?.setAttribute("href", siteUrl);
-      document.getElementById("og-url")?.setAttribute("content", siteUrl);
-      document
-        .getElementById("og-image")
-        ?.setAttribute("content", socialImageUrl);
-      document
-        .getElementById("twitter-image")
-        ?.setAttribute("content", socialImageUrl);
+    <meta name="twitter:creator" content="@abdushbag" />
+    <link
+      rel="canonical"
+      href="https://enesgules.enesgules.workers.dev/"
+    />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "Person",
+        "name": "Abdullah Enes Gules",
+        "jobTitle": "Software Engineer",
+        "url": "https://enesgules.enesgules.workers.dev/",
+        "sameAs": [
+          "https://github.com/enesgules",
+          "https://x.com/abdushbag",
+          "https://www.linkedin.com/in/abdullah-enes-gules"
+        ]
+      }
     </script>
     <link
       rel="preload"
@@ -69,7 +91,19 @@
       type="font/woff2"
       crossorigin
     />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link
+      rel="icon"
+      type="image/svg+xml"
+      sizes="any"
+      href="/favicon.svg?v=5"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="96x96"
+      href="/favicon-96.png?v=5"
+    />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=5" />
     <title>Abdullah Enes Gules - Software Engineer</title>
   </head>
   <body>

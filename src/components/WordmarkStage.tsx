@@ -1,13 +1,19 @@
-import { lazy, Suspense, useState } from "react";
-import { backgroundAudioConfig } from "../config/backgroundAudio";
-import { BackgroundAudio } from "./BackgroundAudio";
-import type { DitherVariant } from "./DitherField";
-
-const DitherField = lazy(() =>
-  import("./DitherField").then((module) => ({
-    default: module.DitherField,
-  })),
-);
+import {
+  GithubIcon,
+  Linkedin01Icon,
+  Mail01Icon,
+  NewTwitterIcon,
+} from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
+import type { IconSvgElement } from "@hugeicons/react";
+import { useLayoutEffect, useRef, useState } from "react";
+import { useTheme } from "../theme/useTheme";
+import {
+  DitherBackdrop,
+  type DitherVariant,
+} from "./dither/DitherBackdrop";
+import { ExternalFaviconLink } from "./ExternalFaviconLink";
+import { PageControls } from "./PageControls";
 
 type Project = {
   name: string;
@@ -47,48 +53,138 @@ const projects: ReadonlyArray<Project> = [
   },
 ];
 
-function canUseWebGl() {
-  if (typeof document === "undefined") {
-    return false;
-  }
+type SocialSentenceLinkProps = {
+  href: string;
+  icon: IconSvgElement;
+  label: string;
+  newTab?: boolean;
+};
 
-  const canvas = document.createElement("canvas");
-  const context =
-    canvas.getContext("webgl2") ?? canvas.getContext("webgl");
+function SocialSentenceLink({
+  href,
+  icon,
+  label,
+  newTab = false,
+}: SocialSentenceLinkProps) {
+  return (
+    <a
+      className="social-sentence__link"
+      href={href}
+      rel={newTab ? "noreferrer" : undefined}
+      target={newTab ? "_blank" : undefined}
+    >
+      <span className="social-sentence__label">{label}</span>
+      <span className="social-sentence__icon" aria-hidden="true">
+        <HugeiconsIcon
+          icon={icon}
+          size={17}
+          strokeWidth={1.7}
+        />
+      </span>
+    </a>
+  );
+}
 
-  context?.getExtension("WEBGL_lose_context")?.loseContext();
+function SocialFooter() {
+  const sentenceRef = useRef<HTMLParagraphElement>(null);
 
-  return context !== null;
+  useLayoutEffect(() => {
+    const sentence = sentenceRef.current;
+
+    if (!sentence) {
+      return;
+    }
+
+    const positionIcons = () => {
+      const links = Array.from(
+        sentence.querySelectorAll<HTMLElement>(".social-sentence__link"),
+      );
+      const labels = links.map((link) =>
+        link.querySelector<HTMLElement>(".social-sentence__label"),
+      );
+      const labelTops = labels.flatMap((label) =>
+        label ? [label.getBoundingClientRect().top] : [],
+      );
+      const firstLineTop = Math.min(...labelTops);
+
+      links.forEach((link, index) => {
+        const label = labels[index];
+
+        if (!label) {
+          return;
+        }
+
+        const isFirstLine =
+          Math.abs(label.getBoundingClientRect().top - firstLineTop) < 2;
+        link.dataset.iconPosition = isFirstLine ? "top" : "bottom";
+      });
+    };
+
+    positionIcons();
+    window.addEventListener("resize", positionIcons);
+
+    let isActive = true;
+    void document.fonts.ready.then(() => {
+      if (isActive) {
+        positionIcons();
+      }
+    });
+
+    return () => {
+      isActive = false;
+      window.removeEventListener("resize", positionIcons);
+    };
+  }, []);
+
+  return (
+    <footer className="profile-footer">
+      <p className="social-sentence" ref={sentenceRef}>
+        Most of my code is on{" "}
+        <SocialSentenceLink
+          href="https://github.com/enesgules"
+          icon={GithubIcon}
+          label="GitHub"
+          newTab
+        />
+        . I&apos;m also on{" "}
+        <SocialSentenceLink
+          href="https://x.com/abdushbag"
+          icon={NewTwitterIcon}
+          label="X"
+          newTab
+        />
+        {" "}and{" "}
+        <SocialSentenceLink
+          href="https://www.linkedin.com/in/abdullah-enes-gules"
+          icon={Linkedin01Icon}
+          label="LinkedIn"
+          newTab
+        />
+        , or you can{" "}
+        <SocialSentenceLink
+          href="mailto:abdullah.enes.gules@gmail.com"
+          icon={Mail01Icon}
+          label="email me"
+        />
+        .
+      </p>
+    </footer>
+  );
 }
 
 export function WordmarkStage() {
-  const [canRenderShader] = useState(canUseWebGl);
   const [ditherVariant, setDitherVariant] =
     useState<DitherVariant>("idle");
+  const { cycleTheme, preference, resolvedTheme } = useTheme();
 
   return (
     <main className="profile" aria-labelledby="page-title">
-      <div className="dither-backdrop" data-variant={ditherVariant}>
-        <Suspense
-          fallback={
-            <div
-              className="dither-field dither-field--fallback"
-              data-variant={ditherVariant}
-              aria-hidden="true"
-            />
-          }
-        >
-          {canRenderShader ? (
-            <DitherField variant={ditherVariant} />
-          ) : (
-            <div
-              className="dither-field dither-field--fallback"
-              data-variant={ditherVariant}
-              aria-hidden="true"
-            />
-          )}
-        </Suspense>
-      </div>
+      <DitherBackdrop theme={resolvedTheme} variant={ditherVariant} />
+
+      <PageControls
+        theme={preference}
+        onThemeCycle={cycleTheme}
+      />
 
       <div className="profile__shell">
         <header className="profile__header">
@@ -111,39 +207,19 @@ export function WordmarkStage() {
           <div className="profile-section__body">
             <p>
               I build{" "}
-              <a
-                className="inline-favicon-link"
+              <ExternalFaviconLink
                 href="https://context7.com"
-                target="_blank"
-                rel="noreferrer"
+                faviconSrc="https://context7.com/favicon.ico"
               >
                 Context7
-                <img
-                  className="inline-favicon-link__icon"
-                  src="https://context7.com/favicon.ico"
-                  alt=""
-                  width="20"
-                  height="20"
-                  aria-hidden="true"
-                />
-              </a>{" "}
+              </ExternalFaviconLink>{" "}
               at{" "}
-              <a
-                className="inline-favicon-link"
+              <ExternalFaviconLink
                 href="https://upstash.com"
-                target="_blank"
-                rel="noreferrer"
+                faviconSrc="https://upstash.com/icons/favicon-32x32.png"
               >
                 Upstash
-                <img
-                  className="inline-favicon-link__icon"
-                  src="https://upstash.com/icons/favicon-32x32.png"
-                  alt=""
-                  width="20"
-                  height="20"
-                  aria-hidden="true"
-                />
-              </a>
+              </ExternalFaviconLink>
               . It gives AI coding agents current, version-specific library
               docs and code examples.
             </p>
@@ -183,41 +259,7 @@ export function WordmarkStage() {
           </div>
         </section>
 
-        <footer className="profile-footer">
-          <nav className="social-links" aria-label="Find Enes online">
-            <a
-              className="social-text-link"
-              href="https://github.com/enesgules"
-              target="_blank"
-              rel="noreferrer"
-            >
-              GitHub
-            </a>
-            <a
-              className="social-text-link"
-              href="https://www.linkedin.com/in/abdullah-enes-gules"
-              target="_blank"
-              rel="noreferrer"
-            >
-              LinkedIn
-            </a>
-            <a
-              className="social-text-link"
-              href="https://x.com/abdushbag"
-              target="_blank"
-              rel="noreferrer"
-            >
-              X (Twitter)
-            </a>
-            <a
-              className="social-text-link"
-              href="mailto:abdullah.enes.gules@gmail.com"
-            >
-              Email
-            </a>
-          </nav>
-          <BackgroundAudio {...backgroundAudioConfig} />
-        </footer>
+        <SocialFooter />
       </div>
     </main>
   );

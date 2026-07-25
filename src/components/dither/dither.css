@@ -1,0 +1,259 @@
+.dither-backdrop {
+  position: fixed;
+  z-index: 0;
+  inset: 0;
+  overflow: hidden;
+  opacity: var(--dither-opacity);
+  pointer-events: none;
+  transition: opacity 360ms var(--ease-out);
+}
+
+.dither-backdrop:not([data-variant="idle"]) {
+  opacity: var(--dither-active-opacity);
+}
+
+.dither-field {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: transparent;
+}
+
+.dither-field::before {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  background-color: transparent;
+  content: "";
+  mask-image: radial-gradient(
+    ellipse at var(--dither-x, 58%) var(--dither-y, 18%),
+    black 0%,
+    transparent 68%
+  );
+  opacity: 0;
+  transition:
+    background-color 420ms ease,
+    opacity 420ms ease;
+}
+
+.dither-field[data-variant="context7"]::before {
+  --dither-x: 72%;
+  --dither-y: 26%;
+  background-color: var(--accent-context7);
+  opacity: var(--accent-context7-opacity);
+}
+
+.dither-field[data-variant="hugeicons"]::before {
+  --dither-x: 18%;
+  --dither-y: 46%;
+  background-color: var(--accent-hugeicons);
+  opacity: var(--accent-hugeicons-opacity);
+}
+
+.dither-field[data-variant="distributed"]::before {
+  --dither-x: 76%;
+  --dither-y: 64%;
+  background-color: var(--accent-distributed);
+  opacity: var(--accent-distributed-opacity);
+}
+
+.dither-field[data-variant="dkt"]::before {
+  --dither-x: 32%;
+  --dither-y: 70%;
+  background-color: var(--accent-dkt);
+  mask-image: radial-gradient(
+    ellipse at var(--dither-x) var(--dither-y),
+    black 0%,
+    transparent 88%
+  );
+  opacity: var(--accent-dkt-opacity);
+}
+
+.dither-field::after {
+  position: absolute;
+  z-index: 2;
+  inset: 0;
+  background:
+    linear-gradient(
+      90deg,
+      transparent 0%,
+      rgb(var(--paper-rgb) / 52%) 22%,
+      rgb(var(--paper-rgb) / 84%) 34%,
+      rgb(var(--paper-rgb) / 84%) 66%,
+      rgb(var(--paper-rgb) / 52%) 78%,
+      transparent 100%
+    ),
+    linear-gradient(
+      180deg,
+      rgb(var(--paper-rgb) / 44%) 0%,
+      transparent 24%,
+      transparent 72%,
+      rgb(var(--paper-rgb) / 48%) 100%
+    );
+  content: "";
+}
+
+.dither-field--fallback::before {
+  background-image: radial-gradient(
+    circle,
+    rgb(var(--ink-rgb) / 44%) 0 0.75px,
+    transparent 1px
+  );
+  background-position: center;
+  background-size: 6px 6px;
+  opacity: 0.42;
+}
+
+.dither-field__layer,
+.dither-field__shader,
+.dither-field__shader canvas {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.dither-field__layer {
+  --dither-mask-x: 58%;
+  --dither-mask-y: 18%;
+  --dither-enter-transform: translate3d(2vw, -1.5vh, 0) scale(0.985);
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  mask-image: radial-gradient(
+    ellipse at var(--dither-mask-x) var(--dither-mask-y),
+    black 0%,
+    transparent var(--dither-mask-end, 88%)
+  );
+  opacity: 0;
+  filter: blur(5px);
+  transform: var(--dither-enter-transform);
+  transition:
+    opacity 280ms ease-in,
+    filter 360ms ease-in,
+    transform 420ms ease-in;
+  will-change: transform, opacity, filter;
+}
+
+.dither-field__layer[data-variant="idle"] {
+  --dither-mask-x: 64%;
+  --dither-mask-y: 20%;
+  --dither-mask-end: 92%;
+}
+
+.dither-field__layer[data-variant="context7"] {
+  --dither-mask-x: 72%;
+  --dither-mask-y: 26%;
+  --dither-mask-end: 76%;
+  --dither-enter-transform: translate3d(1.5vw, -1vh, 0) scale(0.985);
+}
+
+.dither-field__layer[data-variant="hugeicons"] {
+  --dither-mask-x: 18%;
+  --dither-mask-y: 46%;
+  --dither-enter-transform: translate3d(-2vw, 0, 0) scale(0.985);
+}
+
+.dither-field__layer[data-variant="distributed"] {
+  --dither-mask-x: 76%;
+  --dither-mask-y: 64%;
+  --dither-mask-end: 96%;
+  --dither-enter-transform: translate3d(1.5vw, 1.5vh, 0) scale(0.96);
+}
+
+.dither-field__layer[data-variant="dkt"] {
+  --dither-mask-x: 32%;
+  --dither-mask-y: 70%;
+  --dither-mask-end: 112%;
+  --dither-enter-transform: translate3d(-1.5vw, 2vh, 0) scale(1.015);
+}
+
+.dither-field__layer[data-active="true"] {
+  opacity: 0.9;
+  filter: blur(0);
+  transform: translate3d(0, 0, 0) scale(1);
+  transition:
+    opacity 480ms ease-out,
+    filter 560ms var(--ease-out),
+    transform 640ms var(--ease-out);
+}
+
+.dither-field__layer[data-active="true"][data-variant="idle"] {
+  opacity: 1;
+}
+
+.dither-field__shader {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform-origin: center;
+}
+
+.dither-field__layer[data-animate="true"][data-variant="idle"]
+  .dither-field__shader {
+  animation: dither-idle-drift 8.5s ease-in-out infinite alternate;
+}
+
+.dither-field__layer[data-animate="true"][data-variant="hugeicons"]
+  .dither-field__shader {
+  animation: dither-dots-travel 3.2s ease-in-out infinite alternate;
+}
+
+.dither-field__shader + canvas {
+  position: relative;
+  z-index: 1;
+}
+
+@keyframes dither-idle-drift {
+  from {
+    transform: scale(1.04) translate3d(-1.5%, -1%, 0);
+  }
+
+  to {
+    transform: scale(1.04) translate3d(1.5%, 1.5%, 0);
+  }
+}
+
+@keyframes dither-dots-travel {
+  from {
+    transform: scale(1.08) translate3d(-3%, -1.5%, 0);
+  }
+
+  to {
+    transform: scale(1.08) translate3d(3%, 2%, 0);
+  }
+}
+
+@media (max-width: 700px) {
+  .dither-backdrop {
+    opacity: 0.42;
+  }
+
+  .dither-backdrop:not([data-variant="idle"]) {
+    opacity: 0.58;
+  }
+
+  .dither-field::after {
+    background:
+      linear-gradient(
+        90deg,
+        var(--paper) 0%,
+        rgb(var(--paper-rgb) / 84%) 52%,
+        transparent 100%
+      ),
+      linear-gradient(
+        180deg,
+        rgb(var(--paper-rgb) / 28%) 0%,
+        transparent 32%,
+        rgb(var(--paper-rgb) / 48%) 100%
+      );
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dither-backdrop,
+  .dither-field::before,
+  .dither-field__layer,
+  .dither-field__shader {
+    transition-duration: 0.01ms !important;
+    transition-delay: 0ms !important;
+  }
+}
