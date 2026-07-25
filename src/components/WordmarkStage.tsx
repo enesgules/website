@@ -1,11 +1,49 @@
 import { lazy, Suspense, useState } from "react";
-import { ThinkingOrb } from "thinking-orbs";
+import type { DitherVariant } from "./DitherField";
 
 const DitherField = lazy(() =>
   import("./DitherField").then((module) => ({
     default: module.DitherField,
   })),
 );
+
+type Project = {
+  name: string;
+  description: string;
+  href: string;
+  dither: Exclude<DitherVariant, "idle">;
+};
+
+const projects: ReadonlyArray<Project> = [
+  {
+    name: "Context7",
+    description:
+      "Up-to-date library documentation and code examples for AI coding agents.",
+    href: "https://context7.com",
+    dither: "context7",
+  },
+  {
+    name: "Hugeicons Animated",
+    description:
+      "Hand-animated React icons that install as editable source code.",
+    href: "https://hugeicons-animated.com",
+    dither: "hugeicons",
+  },
+  {
+    name: "Distributed Concepts",
+    description:
+      "A 3D lesson that makes distributed database behavior visible.",
+    href: "https://distributedconcepts.com",
+    dither: "distributed",
+  },
+  {
+    name: "DKT Materyal",
+    description:
+      "Printable activity cards made for Turkish speech therapists.",
+    href: "https://dktmateryal.com",
+    dither: "dkt",
+  },
+];
 
 function canUseWebGl() {
   if (typeof document === "undefined") {
@@ -22,123 +60,162 @@ function canUseWebGl() {
 }
 
 export function WordmarkStage() {
-  const [isOpen, setIsOpen] = useState(false);
   const [canRenderShader] = useState(canUseWebGl);
+  const [ditherVariant, setDitherVariant] =
+    useState<DitherVariant>("idle");
 
   return (
-    <main
-      className="wordmark-stage"
-      data-open={isOpen}
-      aria-labelledby="page-title"
-    >
-      <h1 className="visually-hidden" id="page-title">
-        Abdullah Enes Gules, software engineer at Upstash building Context7
-      </h1>
-
-      <Suspense
-        fallback={
-          <div
-            className="dither-field dither-field--fallback"
-            aria-hidden="true"
-          />
-        }
-      >
-        {canRenderShader ? (
-          <DitherField />
-        ) : (
-          <div
-            className="dither-field dither-field--fallback"
-            aria-hidden="true"
-          />
-        )}
-      </Suspense>
-
-      <div className="identity-control">
-        <button
-          className="identity-toggle"
-          type="button"
-          aria-label={isOpen ? "Close introduction" : "Meet Abdush"}
-          aria-pressed={isOpen}
-          onClick={() => setIsOpen((open) => !open)}
-        >
-          <span className="identity-toggle__orb">
-            <ThinkingOrb
-              state={isOpen ? "solving" : "shaping"}
-              size={64}
-              theme="dark"
-              speed={0.72}
+    <main className="profile" aria-labelledby="page-title">
+      <div className="dither-backdrop" data-variant={ditherVariant}>
+        <Suspense
+          fallback={
+            <div
+              className="dither-field dither-field--fallback"
+              data-variant={ditherVariant}
               aria-hidden="true"
-              style={{ width: "64%", height: "64%" }}
             />
-          </span>
-
-          <span className="identity-toggle__labels" aria-hidden="true">
-            <span className="identity-toggle__label identity-toggle__label--closed">
-              meet abdush
-            </span>
-            <span className="identity-toggle__label identity-toggle__label--open">
-              close
-            </span>
-          </span>
-        </button>
+          }
+        >
+          {canRenderShader ? (
+            <DitherField variant={ditherVariant} />
+          ) : (
+            <div
+              className="dither-field dither-field--fallback"
+              data-variant={ditherVariant}
+              aria-hidden="true"
+            />
+          )}
+        </Suspense>
       </div>
 
-      <div className="wordmark" aria-hidden="true">
-        <span className="wordmark__nickname">abdush</span>
+      <div className="profile__shell">
+        <header className="profile__header">
+          <div className="profile__identity">
+            <h1 id="page-title">Abdullah Enes Gules</h1>
+            <p>Software Engineer</p>
+          </div>
+          <img
+            className="profile__avatar"
+            src="https://avatars.githubusercontent.com/u/101020733?v=4"
+            alt=""
+            width="44"
+            height="44"
+            aria-hidden="true"
+          />
+        </header>
 
-        <div className="wordmark__name">
-          <span className="wordmark__half wordmark__half--left">enes</span>
-          <span className="wordmark__half wordmark__half--right">gules</span>
-        </div>
-      </div>
+        <section className="profile-section profile-section--today">
+          <h2>Today</h2>
+          <div className="profile-section__body">
+            <p>
+              I build{" "}
+              <a
+                className="inline-favicon-link"
+                href="https://context7.com"
+                target="_blank"
+                rel="noreferrer"
+              >
+                Context7
+                <img
+                  className="inline-favicon-link__icon"
+                  src="https://context7.com/favicon.ico"
+                  alt=""
+                  width="20"
+                  height="20"
+                  aria-hidden="true"
+                />
+              </a>{" "}
+              at{" "}
+              <a
+                className="inline-favicon-link"
+                href="https://upstash.com"
+                target="_blank"
+                rel="noreferrer"
+              >
+                Upstash
+                <img
+                  className="inline-favicon-link__icon"
+                  src="https://upstash.com/icons/favicon-32x32.png"
+                  alt=""
+                  width="20"
+                  height="20"
+                  aria-hidden="true"
+                />
+              </a>
+              . It gives AI coding agents current, version-specific library
+              docs and code examples.
+            </p>
+            <p>
+              I also build small open-source tools and interactive ways to
+              explain technical ideas.
+            </p>
+          </div>
+        </section>
 
-      <footer className="identity-rail">
-        <div className="identity-rail__intro">
-          <p>
-            I build{" "}
+        <section className="profile-section" aria-labelledby="projects-title">
+          <h2 id="projects-title">Projects</h2>
+
+          <div className="project-list">
+            {projects.map((project) => (
+              <a
+                className="project-entry"
+                data-project={project.dither}
+                href={project.href}
+                key={project.href}
+                target="_blank"
+                rel="noreferrer"
+                onMouseEnter={() => setDitherVariant(project.dither)}
+                onMouseLeave={() => setDitherVariant("idle")}
+                onFocus={() => setDitherVariant(project.dither)}
+                onBlur={() => setDitherVariant("idle")}
+              >
+                <span className="project-entry__title">{project.name}</span>
+                <span className="project-entry__description">
+                  {project.description}
+                </span>
+                <span className="project-entry__arrow" aria-hidden="true">
+                  ↗
+                </span>
+              </a>
+            ))}
+          </div>
+        </section>
+
+        <footer className="profile-footer">
+          <nav className="social-links" aria-label="Find Enes online">
             <a
-              href="https://context7.com"
+              className="social-text-link"
+              href="https://github.com/enesgules"
               target="_blank"
               rel="noreferrer"
             >
-              Context7
-            </a>{" "}
-            at{" "}
-            <a href="https://upstash.com" target="_blank" rel="noreferrer">
-              Upstash
+              GitHub
             </a>
-            .
-          </p>
-          <p className="identity-rail__meta">
-            software engineer · istanbul
-          </p>
-        </div>
-
-        <nav className="identity-links" aria-label="Find Enes online">
-          <a
-            href="https://github.com/enesgules"
-            target="_blank"
-            rel="noreferrer"
-          >
-            github <span aria-hidden="true">↗</span>
-          </a>
-          <a
-            href="https://www.linkedin.com/in/abdullah-enes-gules"
-            target="_blank"
-            rel="noreferrer"
-          >
-            linkedin <span aria-hidden="true">↗</span>
-          </a>
-          <a
-            href="https://x.com/abdushbag"
-            target="_blank"
-            rel="noreferrer"
-          >
-            x <span aria-hidden="true">↗</span>
-          </a>
-          <a href="mailto:abdullah.enes.gules@gmail.com">email</a>
-        </nav>
-      </footer>
+            <a
+              className="social-text-link"
+              href="https://www.linkedin.com/in/abdullah-enes-gules"
+              target="_blank"
+              rel="noreferrer"
+            >
+              LinkedIn
+            </a>
+            <a
+              className="social-text-link"
+              href="https://x.com/abdushbag"
+              target="_blank"
+              rel="noreferrer"
+            >
+              X (Twitter)
+            </a>
+            <a
+              className="social-text-link"
+              href="mailto:abdullah.enes.gules@gmail.com"
+            >
+              Email
+            </a>
+          </nav>
+        </footer>
+      </div>
     </main>
   );
 }
