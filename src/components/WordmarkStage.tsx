@@ -1,4 +1,6 @@
 import { lazy, Suspense, useState } from "react";
+import { backgroundAudioConfig } from "../config/backgroundAudio";
+import { BackgroundAudio } from "./BackgroundAudio";
 import type { DitherVariant } from "./DitherField";
 
 const DitherField = lazy(() =>
@@ -214,6 +216,7 @@ export function WordmarkStage() {
               Email
             </a>
           </nav>
+          <BackgroundAudio {...backgroundAudioConfig} />
         </footer>
       </div>
     </main>
