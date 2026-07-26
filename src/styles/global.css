@@ -133,7 +133,7 @@ canvas {
 
 .profile__header p {
   color: var(--ink-muted);
-  font-size: 0.95rem;
+  font-size: 1rem;
   line-height: 1.4;
 }
 
@@ -143,7 +143,7 @@ canvas {
 
 .profile-section h2 {
   margin-bottom: 1.55rem;
-  font-size: 0.95rem;
+  font-size: 1rem;
   font-weight: 600;
   letter-spacing: -0.014em;
   line-height: 1.35;
@@ -173,8 +173,36 @@ canvas {
   transition: text-decoration-color 160ms ease;
 }
 
-.context7-stars span {
+.context7-stars {
+  position: relative;
+  display: inline-block;
+}
+
+.context7-stars__count {
   font-variant-numeric: tabular-nums;
+}
+
+.context7-stars__icon {
+  position: absolute;
+  z-index: 1;
+  top: 50%;
+  left: calc(100% + 0.45rem);
+  opacity: 0;
+  pointer-events: none;
+  filter: blur(4px);
+  transform: translate(-0.3rem, -50%) scale(0.25);
+  transform-origin: left center;
+  transition:
+    opacity 180ms cubic-bezier(0.2, 0, 0, 1),
+    filter 200ms cubic-bezier(0.2, 0, 0, 1),
+    transform 220ms cubic-bezier(0.2, 0, 0, 1);
+}
+
+.context7-stars:focus-visible .context7-stars__icon {
+  opacity: 1;
+  filter: blur(0);
+  transform: translate(0, -50%) scale(1);
+  transition-duration: 0ms;
 }
 
 .inline-favicon-link {
@@ -470,6 +498,12 @@ canvas {
     transform: translate(-50%, 0) scale(1);
   }
 
+  .context7-stars:hover .context7-stars__icon {
+    opacity: 1;
+    filter: blur(0);
+    transform: translate(0, -50%) scale(1);
+  }
+
   .project-entry:hover .project-entry__arrow {
     color: var(--ink);
   }
@@ -602,6 +636,7 @@ canvas {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .context7-stars__icon,
   .inline-favicon-link__icon,
   .project-entry__arrow,
   .project-entry__arrow svg,

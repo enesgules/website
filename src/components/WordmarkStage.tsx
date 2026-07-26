@@ -27,28 +27,27 @@ const projects: ReadonlyArray<Project> = [
   {
     name: "Context7",
     description:
-      "Up-to-date library documentation and code examples for AI coding agents.",
+      "Current, version-specific library docs and code examples for AI coding tools.",
     href: "https://context7.com",
     dither: "context7",
   },
   {
     name: "Hugeicons Animated",
     description:
-      "Hand-animated React icons that install as editable source code.",
+      "A collection of hand-animated React icons you can install and edit.",
     href: "https://hugeicons-animated.com",
     dither: "hugeicons",
   },
   {
     name: "Distributed Concepts",
     description:
-      "A 3D lesson that makes distributed database behavior visible.",
+      "Explore distributed database behavior through an interactive 3D globe.",
     href: "https://distributedconcepts.com",
     dither: "distributed",
   },
   {
     name: "DKT Materyal",
-    description:
-      "Printable activity cards made for Turkish speech therapists.",
+    description: "Printable materials for Turkish speech therapists.",
     href: "https://dktmateryal.com",
     dither: "dkt",
   },
@@ -118,7 +117,16 @@ function Context7StarCount() {
       target="_blank"
       rel="noreferrer"
     >
-      <span>{compactNumberFormatter.format(starCount)}</span> stars on GitHub
+      <span className="context7-stars__count">
+        {compactNumberFormatter.format(starCount)}
+      </span>{" "}
+      stars on GitHub
+      <span
+        className="link-icon-tile context7-stars__icon"
+        aria-hidden="true"
+      >
+        <HugeiconsIcon icon={GithubIcon} size={15} strokeWidth={1.7} />
+      </span>
     </a>
   );
 }
@@ -212,32 +220,32 @@ function SocialFooter() {
   return (
     <footer className="profile-footer">
       <p className="social-sentence" ref={sentenceRef}>
-        Most of my code is on{" "}
+        Find my code on{" "}
         <SocialSentenceLink
           href="https://github.com/enesgules"
           icon={GithubIcon}
           label="GitHub"
           newTab
         />
-        . I&apos;m also on{" "}
+        . You can also reach me through{" "}
         <SocialSentenceLink
           href="https://x.com/abdushbag"
           icon={NewTwitterIcon}
-          label="X (Twitter)"
+          label="X"
           newTab
         />
-        {" "}and{" "}
+        ,{" "}
         <SocialSentenceLink
           href="https://www.linkedin.com/in/abdullah-enes-gules"
           icon={Linkedin01Icon}
           label="LinkedIn"
           newTab
         />
-        , or you can{" "}
+        , or{" "}
         <SocialSentenceLink
           href="mailto:abdullah.enes.gules@gmail.com"
           icon={Mail01Icon}
-          label="email me"
+          label="email"
         />
         .
       </p>
@@ -276,7 +284,7 @@ export function WordmarkStage() {
         </header>
 
         <section className="profile-section profile-section--today">
-          <h2>Today</h2>
+          <h2>Now</h2>
           <div className="profile-section__body">
             <p>
               I build{" "}
@@ -297,12 +305,13 @@ export function WordmarkStage() {
               >
                 Upstash
               </ExternalFaviconLink>
-              . It gives AI coding agents current, version-specific library
-              docs and code examples. It has <Context7StarCount />.
+              . It gives AI coding tools current, version-specific library docs
+              and code examples. The open-source project has{" "}
+              <Context7StarCount />.
             </p>
             <p>
-              I also build small open-source tools and interactive ways to
-              explain technical ideas.
+              I also make open-source tools and interactive lessons about
+              software.
             </p>
           </div>
         </section>
