@@ -133,7 +133,7 @@ export function BackgroundAudio() {
         ref={audioRef}
         src={audioSource}
         loop
-        preload="none"
+        preload="metadata"
         onError={() => setPlayback("error")}
       />
       <PageControl

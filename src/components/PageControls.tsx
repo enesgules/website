@@ -4,7 +4,6 @@ import {
   Sun03Icon,
 } from "@hugeicons/core-free-icons";
 import type { ThemePreference } from "../theme/useTheme";
-import { getNextThemePreference } from "../theme/useTheme";
 import { BackgroundAudio } from "./BackgroundAudio";
 import { PageControl, PageControlIcon } from "./ui/PageControl";
 import { TooltipProvider } from "./ui/Tooltip";
@@ -15,12 +14,9 @@ type ThemeToggleProps = {
 };
 
 function ThemeToggle({ theme, onThemeCycle }: ThemeToggleProps) {
-  const nextTheme = getNextThemePreference(theme);
-  const actionLabel = `Theme: ${theme}. Switch to ${nextTheme} mode`;
-
   return (
     <PageControl
-      label={actionLabel}
+      label="Switch theme"
       data-theme-preference={theme}
       onClick={onThemeCycle}
     >

@@ -3,6 +3,19 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script>
+      (() => {
+        const preference = window.localStorage.getItem("enesgules-theme");
+        const theme =
+          preference === "light" || preference === "dark"
+            ? preference
+            : window.matchMedia("(prefers-color-scheme: dark)").matches
+              ? "dark"
+              : "light";
+
+        document.documentElement.dataset.theme = theme;
+      })();
+    </script>
     <meta
       name="theme-color"
       content="#f6f6f3"
