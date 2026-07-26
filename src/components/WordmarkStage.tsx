@@ -1,5 +1,4 @@
 import {
-  ArrowRight01Icon,
   GithubIcon,
   Linkedin01Icon,
   Mail01Icon,
@@ -260,7 +259,10 @@ export function WordmarkStage() {
 
   return (
     <main className="profile" aria-labelledby="page-title">
-      <DitherBackdrop theme={resolvedTheme} variant={ditherVariant} />
+      <DitherBackdrop
+        theme={resolvedTheme}
+        variant={ditherVariant}
+      />
 
       <PageControls
         theme={preference}
@@ -319,7 +321,10 @@ export function WordmarkStage() {
         <section className="profile-section" aria-labelledby="projects-title">
           <h2 id="projects-title">Projects</h2>
 
-          <div className="project-list">
+          <div
+            className="project-list"
+            onPointerLeave={() => setDitherVariant("idle")}
+          >
             {projects.map((project) => (
               <a
                 className="project-entry"
@@ -328,24 +333,14 @@ export function WordmarkStage() {
                 key={project.href}
                 target="_blank"
                 rel="noreferrer"
-                onMouseEnter={() => setDitherVariant(project.dither)}
-                onMouseLeave={() => setDitherVariant("idle")}
+                onPointerEnter={() => setDitherVariant(project.dither)}
+                onPointerLeave={() => setDitherVariant("idle")}
                 onFocus={() => setDitherVariant(project.dither)}
                 onBlur={() => setDitherVariant("idle")}
               >
                 <span className="project-entry__title">{project.name}</span>
                 <span className="project-entry__description">
                   {project.description}
-                </span>
-                <span
-                  className="link-icon-tile project-entry__arrow"
-                  aria-hidden="true"
-                >
-                  <HugeiconsIcon
-                    icon={ArrowRight01Icon}
-                    size={15}
-                    strokeWidth={1.7}
-                  />
                 </span>
               </a>
             ))}

@@ -44,14 +44,27 @@ function DitherFallback({ variant }: Pick<DitherBackdropProps, "variant">) {
   );
 }
 
-export function DitherBackdrop({ theme, variant }: DitherBackdropProps) {
+export function DitherBackdrop({
+  theme,
+  variant,
+}: DitherBackdropProps) {
   const [canRenderShader] = useState(canUseWebGl);
 
   return (
-    <div className="dither-backdrop" data-variant={variant}>
-      <Suspense fallback={<DitherFallback variant={variant} />}>
+    <div
+      className="dither-backdrop"
+      data-variant={variant}
+    >
+      <Suspense
+        fallback={
+          <DitherFallback variant={variant} />
+        }
+      >
         {canRenderShader ? (
-          <DitherShader theme={theme} variant={variant} />
+          <DitherShader
+            theme={theme}
+            variant={variant}
+          />
         ) : (
           <DitherFallback variant={variant} />
         )}

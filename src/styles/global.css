@@ -28,8 +28,6 @@
   --accent-hugeicons-opacity: 0.2;
   --accent-distributed-opacity: 0.2;
   --accent-dkt-opacity: 0.18;
-  --project-arrow-opacity: 0.34;
-  --project-arrow-hover-opacity: 0.72;
   --control-shadow:
     0 0 0 1px rgb(0 0 0 / 6%),
     0 1px 2px rgb(0 0 0 / 7%),
@@ -262,7 +260,7 @@ canvas {
   min-height: 8.5rem;
   padding: 1.35rem 0;
   border-bottom: 1px solid var(--ink-faint);
-  grid-template-columns: minmax(10.5rem, 0.82fr) 1.45fr auto;
+  grid-template-columns: minmax(10.5rem, 0.82fr) 1.45fr;
   align-items: center;
   gap: 1.35rem;
   color: var(--ink);
@@ -270,8 +268,7 @@ canvas {
 }
 
 .project-entry__title,
-.project-entry__description,
-.project-entry__arrow {
+.project-entry__description {
   position: relative;
   z-index: 1;
 }
@@ -283,25 +280,12 @@ canvas {
   line-height: 1.4;
 }
 
-.project-entry__arrow {
-  color: var(--ink-muted);
-  transition: color 160ms ease;
-}
-
-.project-entry__arrow svg {
-  opacity: var(--project-arrow-opacity);
-  transition:
-    opacity 160ms ease,
-    transform 180ms var(--ease-out);
-}
-
 .profile-footer {
   margin-top: clamp(5.5rem, 13vw, 7.25rem);
   padding-bottom: 2rem;
 }
 
 .social-sentence {
-  max-width: 32rem;
   margin: 0;
 }
 
@@ -504,15 +488,6 @@ canvas {
     transform: translate(0, -50%) scale(1);
   }
 
-  .project-entry:hover .project-entry__arrow {
-    color: var(--ink);
-  }
-
-  .project-entry:hover .project-entry__arrow svg {
-    opacity: var(--project-arrow-hover-opacity);
-    transform: translateX(0.1rem);
-  }
-
   .social-sentence__link:hover {
     text-decoration-color: var(--ink);
   }
@@ -563,8 +538,6 @@ canvas {
     --accent-hugeicons-opacity: 0.24;
     --accent-distributed-opacity: 0.26;
     --accent-dkt-opacity: 0.24;
-    --project-arrow-opacity: 0.46;
-    --project-arrow-hover-opacity: 0.82;
     --control-shadow: 0 0 0 1px rgb(255 255 255 / 9%);
     --dither-opacity: 0.56;
     --dither-active-opacity: 0.7;
@@ -600,8 +573,6 @@ canvas {
   --accent-hugeicons-opacity: 0.24;
   --accent-distributed-opacity: 0.26;
   --accent-dkt-opacity: 0.24;
-  --project-arrow-opacity: 0.46;
-  --project-arrow-hover-opacity: 0.82;
   --control-shadow: 0 0 0 1px rgb(255 255 255 / 9%);
   --dither-opacity: 0.56;
   --dither-active-opacity: 0.7;
@@ -619,7 +590,7 @@ canvas {
 
   .project-entry {
     min-height: 9rem;
-    grid-template-columns: 1fr auto;
+    grid-template-columns: 1fr;
     align-content: center;
     gap: 0.35rem 1rem;
   }
@@ -628,18 +599,11 @@ canvas {
     grid-column: 1 / -1;
     padding-right: 1rem;
   }
-
-  .project-entry__arrow {
-    grid-column: 2;
-    grid-row: 1;
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .context7-stars__icon,
   .inline-favicon-link__icon,
-  .project-entry__arrow,
-  .project-entry__arrow svg,
   .profile-section p a,
   .social-sentence__link,
   .social-sentence__icon,

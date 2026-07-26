@@ -69,6 +69,10 @@
   opacity: var(--accent-dkt-opacity);
 }
 
+.dither-field:not(.dither-field--fallback)::before {
+  opacity: 0;
+}
+
 .dither-field::after {
   position: absolute;
   z-index: 2;
@@ -104,122 +108,16 @@
   opacity: 0.42;
 }
 
-.dither-field__layer,
-.dither-field__shader,
-.dither-field__shader canvas {
+.dither-field__shader-transition,
+.dither-field__shader-transition canvas {
   width: 100% !important;
   height: 100% !important;
 }
 
-.dither-field__layer {
-  --dither-mask-x: 58%;
-  --dither-mask-y: 18%;
-  --dither-enter-transform: translate3d(2vw, -1.5vh, 0) scale(0.985);
+.dither-field__shader-transition {
   position: absolute;
   z-index: 1;
   inset: 0;
-  mask-image: radial-gradient(
-    ellipse at var(--dither-mask-x) var(--dither-mask-y),
-    black 0%,
-    transparent var(--dither-mask-end, 88%)
-  );
-  opacity: 0;
-  filter: blur(5px);
-  transform: var(--dither-enter-transform);
-  transition:
-    opacity 280ms ease-in,
-    filter 360ms ease-in,
-    transform 420ms ease-in;
-  will-change: transform, opacity, filter;
-}
-
-.dither-field__layer[data-variant="idle"] {
-  --dither-mask-x: 64%;
-  --dither-mask-y: 20%;
-  --dither-mask-end: 92%;
-}
-
-.dither-field__layer[data-variant="context7"] {
-  --dither-mask-x: 72%;
-  --dither-mask-y: 26%;
-  --dither-mask-end: 76%;
-  --dither-enter-transform: translate3d(1.5vw, -1vh, 0) scale(0.985);
-}
-
-.dither-field__layer[data-variant="hugeicons"] {
-  --dither-mask-x: 18%;
-  --dither-mask-y: 46%;
-  --dither-enter-transform: translate3d(-2vw, 0, 0) scale(0.985);
-}
-
-.dither-field__layer[data-variant="distributed"] {
-  --dither-mask-x: 76%;
-  --dither-mask-y: 64%;
-  --dither-mask-end: 96%;
-  --dither-enter-transform: translate3d(1.5vw, 1.5vh, 0) scale(0.96);
-}
-
-.dither-field__layer[data-variant="dkt"] {
-  --dither-mask-x: 32%;
-  --dither-mask-y: 70%;
-  --dither-mask-end: 112%;
-  --dither-enter-transform: translate3d(-1.5vw, 2vh, 0) scale(1.015);
-}
-
-.dither-field__layer[data-active="true"] {
-  opacity: 0.9;
-  filter: blur(0);
-  transform: translate3d(0, 0, 0) scale(1);
-  transition:
-    opacity 480ms ease-out,
-    filter 560ms var(--ease-out),
-    transform 640ms var(--ease-out);
-}
-
-.dither-field__layer[data-active="true"][data-variant="idle"] {
-  opacity: 1;
-}
-
-.dither-field__shader {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  transform-origin: center;
-}
-
-.dither-field__layer[data-animate="true"][data-variant="idle"]
-  .dither-field__shader {
-  animation: dither-idle-drift 8.5s ease-in-out infinite alternate;
-}
-
-.dither-field__layer[data-animate="true"][data-variant="hugeicons"]
-  .dither-field__shader {
-  animation: dither-dots-travel 3.2s ease-in-out infinite alternate;
-}
-
-.dither-field__shader + canvas {
-  position: relative;
-  z-index: 1;
-}
-
-@keyframes dither-idle-drift {
-  from {
-    transform: scale(1.04) translate3d(-1.5%, -1%, 0);
-  }
-
-  to {
-    transform: scale(1.04) translate3d(1.5%, 1.5%, 0);
-  }
-}
-
-@keyframes dither-dots-travel {
-  from {
-    transform: scale(1.08) translate3d(-3%, -1.5%, 0);
-  }
-
-  to {
-    transform: scale(1.08) translate3d(3%, 2%, 0);
-  }
 }
 
 @media (max-width: 700px) {
@@ -250,9 +148,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .dither-backdrop,
-  .dither-field::before,
-  .dither-field__layer,
-  .dither-field__shader {
+  .dither-field::before {
     transition-duration: 0.01ms !important;
     transition-delay: 0ms !important;
   }
