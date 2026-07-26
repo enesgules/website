@@ -8,26 +8,13 @@ uniform vec2 u_resolution;
 uniform float u_pixelRatio;
 
 uniform vec4 u_colorBack;
-uniform vec4 u_fromColorFront;
-uniform vec4 u_toColorFront;
-
-uniform float u_fromShape;
-uniform float u_toShape;
-uniform float u_fromType;
-uniform float u_toType;
-uniform float u_fromPxSize;
-uniform float u_toPxSize;
-uniform float u_fromScale;
-uniform float u_toScale;
-uniform float u_fromRotation;
-uniform float u_toRotation;
-uniform vec2 u_fromOffset;
-uniform vec2 u_toOffset;
-uniform float u_fromSpeed;
-uniform float u_toSpeed;
-uniform vec3 u_fromMask;
-uniform vec3 u_toMask;
-uniform float u_progress;
+uniform vec4 u_colorFronts[5];
+uniform vec4 u_params[5];
+uniform vec2 u_offsets[5];
+uniform vec2 u_motion[5];
+uniform vec3 u_masks[5];
+uniform vec4 u_weights;
+uniform float u_dktWeight;
 
 out vec4 fragColor;
 
@@ -251,47 +238,22 @@ float getFieldMask(vec2 screenUv, vec3 maskData) {
   return 1.0 - smoothstep(0.0, maskData.z, distanceValue);
 }
 
-float getTransitionAmount(
-  float progress,
-  vec2 pixelUv
-) {
-  if (progress <= 0.001) {
-    return 0.0;
+float getVariantWeight(int index) {
+  if (index < 4) {
+    return u_weights[index];
   }
-  if (progress >= 0.999) {
-    return 1.0;
-  }
-
-  vec2 transitionCell = floor(pixelUv);
-  float bayerOrder = getBayerValue(transitionCell, 8);
-  float bayerAmount = smoothstep(
-    bayerOrder - 0.11,
-    bayerOrder + 0.11,
-    progress
-  );
-  return mix(progress, bayerAmount, 0.78);
-}
-
-vec4 mixColor(vec4 fromColor, vec4 toColor, float amount) {
-  vec3 fromLinear = pow(max(fromColor.rgb, vec3(0.0)), vec3(2.2));
-  vec3 toLinear = pow(max(toColor.rgb, vec3(0.0)), vec3(2.2));
-  vec3 mixedLinear = mix(fromLinear, toLinear, amount);
-  vec3 mixedColor = pow(
-    max(mixedLinear, vec3(0.0)),
-    vec3(1.0 / 2.2)
-  );
-  return vec4(mixedColor, mix(fromColor.a, toColor.a, amount));
+  return u_dktWeight;
 }
 
 void main() {
-  float progress = clamp(u_progress, 0.0, 1.0);
-  progress = progress * progress * (3.0 - 2.0 * progress);
-
-  float sharedPxSize = mix(
-    u_fromPxSize,
-    u_toPxSize,
-    progress
-  ) * u_pixelRatio;
+  float sharedPxSize = 0.0;
+  float maxWeight = 0.0;
+  for (int i = 0; i < 5; i++) {
+    float weight = getVariantWeight(i);
+    sharedPxSize += weight * u_params[i].z;
+    maxWeight = max(maxWeight, weight);
+  }
+  sharedPxSize *= u_pixelRatio;
   vec2 centeredPosition = gl_FragCoord.xy - 0.5 * u_resolution;
 
   vec2 sharedPixelUv = centeredPosition / sharedPxSize;
@@ -304,70 +266,66 @@ void main() {
     gl_FragCoord.x / u_resolution.x,
     1.0 - gl_FragCoord.y / u_resolution.y
   );
-  vec2 fromShapeUv = getShapeUv(
-    sharedNormalizedUv,
-    u_fromShape,
-    u_fromScale,
-    u_fromRotation,
-    u_fromOffset
-  );
-  vec2 toShapeUv = getShapeUv(
-    sharedNormalizedUv,
-    u_toShape,
-    u_toScale,
-    u_toRotation,
-    u_toOffset
-  );
 
-  float fromShape = evaluateShape(
-    fromShapeUv,
-    u_fromShape,
-    0.5 * u_time * u_fromSpeed
-  );
-  float toShape = evaluateShape(
-    toShapeUv,
-    u_toShape,
-    0.5 * u_time * u_toSpeed
-  );
-  float transitionAmount = getTransitionAmount(
-    progress,
-    sharedPixelUv
-  );
+  float fieldShape = 0.0;
+  float fieldThreshold = 0.0;
+  float fieldMask = 0.0;
+  vec3 frontLinear = vec3(0.0);
+  float frontAlpha = 0.0;
 
-  float fromThreshold = getDitherThreshold(sharedPixelUv, u_fromType);
-  float toThreshold = getDitherThreshold(sharedPixelUv, u_toType);
-  float fromMask = getFieldMask(screenUv, u_fromMask);
-  float toMask = getFieldMask(screenUv, u_toMask);
+  for (int i = 0; i < 5; i++) {
+    float weight = getVariantWeight(i);
+    if (weight <= 0.0001) {
+      continue;
+    }
+
+    vec4 params = u_params[i];
+    vec2 motion = u_motion[i];
+    vec2 shapeUv = getShapeUv(
+      sharedNormalizedUv,
+      params.x,
+      params.w,
+      motion.x,
+      u_offsets[i]
+    );
+    fieldShape += weight * evaluateShape(
+      shapeUv,
+      params.x,
+      0.5 * u_time * motion.y
+    );
+    fieldThreshold += weight * getDitherThreshold(
+      sharedPixelUv,
+      params.y
+    );
+    fieldMask += weight * getFieldMask(screenUv, u_masks[i]);
+
+    vec4 frontColor = u_colorFronts[i];
+    frontLinear += weight * pow(
+      max(frontColor.rgb, vec3(0.0)),
+      vec3(2.2)
+    );
+    frontAlpha += weight * frontColor.a;
+  }
+
+  float transitionAmount = clamp((1.0 - maxWeight) * 2.0, 0.0, 1.0);
   float coverageFeather = mix(
     0.008,
     0.085,
-    sin(progress * PI)
-  );
-  float fromCoverage = smoothstep(
-    fromThreshold - coverageFeather,
-    fromThreshold + coverageFeather,
-    fromShape
-  ) * fromMask;
-  float toCoverage = smoothstep(
-    toThreshold - coverageFeather,
-    toThreshold + coverageFeather,
-    toShape
-  ) * toMask;
-  float ditheredField = mix(
-    fromCoverage,
-    toCoverage,
     transitionAmount
   );
+  float ditheredField = smoothstep(
+    fieldThreshold - coverageFeather,
+    fieldThreshold + coverageFeather,
+    fieldShape
+  ) * fieldMask;
 
-  float colorAmount = smoothstep(0.06, 0.94, progress);
-  vec4 frontColor = mixColor(
-    u_fromColorFront,
-    u_toColorFront,
-    colorAmount
+  vec3 frontColor = pow(
+    max(frontLinear, vec3(0.0)),
+    vec3(1.0 / 2.2)
   );
-  vec3 foreground = frontColor.rgb * frontColor.a;
+  vec3 foreground = frontColor * frontAlpha;
   vec3 background = u_colorBack.rgb * u_colorBack.a;
-  float foregroundOpacity = frontColor.a * ditheredField;
+  float foregroundOpacity = frontAlpha * ditheredField;
   vec3 color = foreground * ditheredField;
   color += background * (1.0 - foregroundOpacity);
   float opacity = foregroundOpacity

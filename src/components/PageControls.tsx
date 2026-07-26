@@ -1,15 +1,14 @@
 import {
-  ComputerIcon,
   Moon02Icon,
   Sun03Icon,
 } from "@hugeicons/core-free-icons";
-import type { ThemePreference } from "../theme/useTheme";
+import type { ColorTheme } from "../theme/useTheme";
 import { BackgroundAudio } from "./BackgroundAudio";
 import { PageControl, PageControlIcon } from "./ui/PageControl";
 import { TooltipProvider } from "./ui/Tooltip";
 
 type ThemeToggleProps = {
-  theme: ThemePreference;
+  theme: ColorTheme;
   onThemeCycle: () => void;
 };
 
@@ -17,10 +16,9 @@ function ThemeToggle({ theme, onThemeCycle }: ThemeToggleProps) {
   return (
     <PageControl
       label="Switch theme"
-      data-theme-preference={theme}
+      data-theme={theme}
       onClick={onThemeCycle}
     >
-      <PageControlIcon active={theme === "system"} icon={ComputerIcon} />
       <PageControlIcon active={theme === "light"} icon={Sun03Icon} />
       <PageControlIcon active={theme === "dark"} icon={Moon02Icon} />
     </PageControl>
@@ -28,7 +26,7 @@ function ThemeToggle({ theme, onThemeCycle }: ThemeToggleProps) {
 }
 
 type PageControlsProps = {
-  theme: ThemePreference;
+  theme: ColorTheme;
   onThemeCycle: () => void;
 };
 

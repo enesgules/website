@@ -259,17 +259,17 @@ function SocialFooter() {
 export function WordmarkStage() {
   const [ditherVariant, setDitherVariant] =
     useState<DitherVariant>("idle");
-  const { cycleTheme, preference, resolvedTheme } = useTheme();
+  const { cycleTheme, theme } = useTheme();
 
   return (
     <main className="profile" aria-labelledby="page-title">
       <DitherBackdrop
-        theme={resolvedTheme}
+        theme={theme}
         variant={ditherVariant}
       />
 
       <PageControls
-        theme={preference}
+        theme={theme}
         onThemeCycle={cycleTheme}
       />
 
@@ -304,7 +304,7 @@ export function WordmarkStage() {
               <ExternalFaviconLink
                 href="https://upstash.com"
                 faviconSrc={
-                  resolvedTheme === "dark"
+                  theme === "dark"
                     ? "/brand/upstash-icon-dark.svg"
                     : "/brand/upstash-icon-light.svg"
                 }

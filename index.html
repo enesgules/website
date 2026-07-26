@@ -3,29 +3,18 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#f6f6f3" />
     <script>
       (() => {
-        const preference = window.localStorage.getItem("enesgules-theme");
-        const theme =
-          preference === "light" || preference === "dark"
-            ? preference
-            : window.matchMedia("(prefers-color-scheme: dark)").matches
-              ? "dark"
-              : "light";
+        const storedTheme = window.localStorage.getItem("enesgules-theme");
+        const theme = storedTheme === "dark" ? "dark" : "light";
 
         document.documentElement.dataset.theme = theme;
+        document
+          .querySelector('meta[name="theme-color"]')
+          .setAttribute("content", theme === "dark" ? "#101411" : "#f6f6f3");
       })();
     </script>
-    <meta
-      name="theme-color"
-      content="#f6f6f3"
-      media="(prefers-color-scheme: light)"
-    />
-    <meta
-      name="theme-color"
-      content="#101411"
-      media="(prefers-color-scheme: dark)"
-    />
     <meta name="author" content="Abdullah Enes Gules" />
     <meta
       name="description"

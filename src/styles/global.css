@@ -541,42 +541,6 @@ canvas {
   }
 }
 
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme]) {
-    --paper-rgb: 16 20 17;
-    --ink-rgb: 237 241 232;
-    --ink-muted: rgb(var(--ink-rgb) / 68%);
-    --ink-faint: rgb(var(--ink-rgb) / 15%);
-    --image-outline: rgb(255 255 255 / 10%);
-    --icon-tile-surface: #1c231d;
-    --icon-tile-border: rgb(255 255 255 / 10%);
-    --icon-tile-shadow: 0 1px 2px rgb(0 0 0 / 32%);
-    --avatar-shadow:
-      0 1px 2px rgb(0 0 0 / 40%),
-      0 6px 18px rgb(0 0 0 / 46%);
-    --control-surface: #1c231d;
-    --control-surface-hover: #273029;
-    --control-ink: #aab4aa;
-    --control-ink-hover: #f0f4ec;
-    --control-divider: rgb(255 255 255 / 12%);
-    --tooltip-surface: #e3e9df;
-    --tooltip-ink: #101411;
-    --tooltip-shadow: 0 8px 24px rgb(0 0 0 / 42%);
-    --accent-context7: #20b88a;
-    --accent-hugeicons: #8acb5a;
-    --accent-distributed: #6482c7;
-    --accent-dkt: #b9956c;
-    --accent-context7-opacity: 0.2;
-    --accent-hugeicons-opacity: 0.24;
-    --accent-distributed-opacity: 0.26;
-    --accent-dkt-opacity: 0.24;
-    --control-shadow: 0 0 0 1px rgb(255 255 255 / 9%);
-    --dither-opacity: 0.56;
-    --dither-active-opacity: 0.7;
-    color-scheme: dark;
-  }
-}
-
 :root[data-theme="dark"] {
   --paper-rgb: 16 20 17;
   --ink-rgb: 237 241 232;

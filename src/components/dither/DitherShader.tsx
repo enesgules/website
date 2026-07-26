@@ -160,7 +160,17 @@ type DitherShaderProps = {
   variant: DitherVariant;
 };
 
-function getGenuineShaderPreset(
+const ditherVariants = [
+  "idle",
+  "context7",
+  "hugeicons",
+  "distributed",
+  "dkt",
+] satisfies DitherVariant[];
+
+type VariantWeights = [number, number, number, number, number];
+
+function getShaderPreset(
   variant: DitherVariant,
   theme: ColorTheme,
 ) {
@@ -179,47 +189,56 @@ function getGenuineShaderPreset(
   };
 }
 
-function getGenuineShaderUniforms({
-  from,
-  progress,
-  theme,
-  to,
-}: {
-  from: DitherVariant;
-  progress: number;
-  theme: ColorTheme;
-  to: DitherVariant;
-}) {
-  const fromPreset = getGenuineShaderPreset(from, theme);
-  const toPreset = getGenuineShaderPreset(to, theme);
+function getVariantWeights(variant: DitherVariant): VariantWeights {
+  return [
+    variant === "idle" ? 1 : 0,
+    variant === "context7" ? 1 : 0,
+    variant === "hugeicons" ? 1 : 0,
+    variant === "distributed" ? 1 : 0,
+    variant === "dkt" ? 1 : 0,
+  ];
+}
+
+function getEmptyWeights(): VariantWeights {
+  return [0, 0, 0, 0, 0];
+}
+
+function getWeightUniforms(weights: VariantWeights) {
+  return {
+    u_weights: weights.slice(0, 4),
+    u_dktWeight: weights[4],
+  };
+}
+
+function getPresetUniforms(theme: ColorTheme) {
+  const presets = ditherVariants.map((variant) =>
+    getShaderPreset(variant, theme),
+  );
 
   return {
     u_colorBack: getShaderColorFromString(
       theme === "dark" ? "#101411" : "#f6f6f3",
     ),
-    u_fromColorFront: fromPreset.color,
-    u_fromMask: fromPreset.mask,
-    u_fromOffset: fromPreset.offset,
-    u_fromPxSize: fromPreset.pxSize,
-    u_fromRotation: fromPreset.rotation,
-    u_fromScale: fromPreset.scale,
-    u_fromShape: fromPreset.shape,
-    u_fromSpeed: fromPreset.speed,
-    u_fromType: fromPreset.type,
-    u_progress: progress,
-    u_toColorFront: toPreset.color,
-    u_toMask: toPreset.mask,
-    u_toOffset: toPreset.offset,
-    u_toPxSize: toPreset.pxSize,
-    u_toRotation: toPreset.rotation,
-    u_toScale: toPreset.scale,
-    u_toShape: toPreset.shape,
-    u_toSpeed: toPreset.speed,
-    u_toType: toPreset.type,
+    "u_colorFronts[0]": presets.map((preset) => preset.color),
+    "u_masks[0]": presets.map((preset) => preset.mask),
+    "u_motion[0]": presets.map((preset) => [
+      preset.rotation,
+      preset.speed,
+    ]),
+    "u_offsets[0]": presets.map((preset) => preset.offset),
+    "u_params[0]": presets.map((preset) => [
+      preset.shape,
+      preset.type,
+      preset.pxSize,
+      preset.scale,
+    ]),
   };
 }
 
-const genuineTransitionDuration = 900;
+const transitionAngularFrequency = 9;
+const maximumFrameDelta = 1 / 30;
+const springPositionTolerance = 0.0005;
+const springVelocityTolerance = 0.005;
 
 export function DitherShader({
   theme,
@@ -228,23 +247,18 @@ export function DitherShader({
   const preferences = useShaderPreferences();
   const shaderElementRef = useRef<PaperShaderElement>(null);
   const animationFrameRef = useRef<number | null>(null);
-  const animationGenerationRef = useRef(0);
-  const fromVariantRef = useRef(variant);
-  const toVariantRef = useRef(variant);
-  const progressRef = useRef(1);
-  const themeRef = useRef(theme);
-  const [initialUniforms] = useState(() =>
-    getGenuineShaderUniforms({
-      from: variant,
-      progress: 1,
-      theme,
-      to: variant,
-    }),
+  const frameTimeRef = useRef<number | null>(null);
+  const weightsRef = useRef<VariantWeights>(getVariantWeights(variant));
+  const velocitiesRef = useRef<VariantWeights>(getEmptyWeights());
+  const targetWeightsRef = useRef<VariantWeights>(
+    getVariantWeights(variant),
   );
+  const [initialUniforms] = useState(() => ({
+    ...getPresetUniforms(theme),
+    ...getWeightUniforms(getVariantWeights(variant)),
+  }));
   const shouldAnimate =
     !preferences.reduceMotion && !preferences.reduceData;
-
-  themeRef.current = theme;
 
   useEffect(() => {
     const shaderMount = shaderElementRef.current?.paperShaderMount;
@@ -253,14 +267,7 @@ export function DitherShader({
       return;
     }
 
-    shaderMount.setUniforms(
-      getGenuineShaderUniforms({
-        from: fromVariantRef.current,
-        progress: progressRef.current,
-        theme,
-        to: toVariantRef.current,
-      }),
-    );
+    shaderMount.setUniforms(getPresetUniforms(theme));
   }, [theme]);
 
   useEffect(() => {
@@ -270,101 +277,97 @@ export function DitherShader({
       return;
     }
 
-    const animationGeneration = animationGenerationRef.current + 1;
-    animationGenerationRef.current = animationGeneration;
-
-    if (animationFrameRef.current !== null) {
-      cancelAnimationFrame(animationFrameRef.current);
-      animationFrameRef.current = null;
-    }
-
-    const settleOnVariant = () => {
-      fromVariantRef.current = variant;
-      toVariantRef.current = variant;
-      progressRef.current = 1;
-      shaderMount.setUniforms(
-        getGenuineShaderUniforms({
-          from: variant,
-          progress: 1,
-          theme: themeRef.current,
-          to: variant,
-        }),
-      );
-    };
+    const targetWeights = getVariantWeights(variant);
+    targetWeightsRef.current = targetWeights;
 
     if (!shouldAnimate) {
-      settleOnVariant();
-      return;
-    }
-
-    let targetProgress = 1;
-
-    if (
-      variant === fromVariantRef.current &&
-      fromVariantRef.current !== toVariantRef.current
-    ) {
-      targetProgress = 0;
-    } else if (variant !== toVariantRef.current) {
-      const visibleVariant =
-        progressRef.current < 0.5
-          ? fromVariantRef.current
-          : toVariantRef.current;
-      fromVariantRef.current = visibleVariant;
-      toVariantRef.current = variant;
-      progressRef.current = 0;
-      shaderMount.setUniforms(
-        getGenuineShaderUniforms({
-          from: visibleVariant,
-          progress: 0,
-          theme: themeRef.current,
-          to: variant,
-        }),
-      );
-    }
-
-    const startingProgress = progressRef.current;
-    const progressDistance = targetProgress - startingProgress;
-
-    if (Math.abs(progressDistance) < 0.001) {
-      settleOnVariant();
-      return;
-    }
-
-    const duration = genuineTransitionDuration * Math.abs(progressDistance);
-    const startedAt = performance.now();
-
-    const animate = (now: number) => {
-      if (animationGeneration !== animationGenerationRef.current) {
-        return;
-      }
-
-      const elapsed = Math.min((now - startedAt) / duration, 1);
-      const progress = startingProgress + progressDistance * elapsed;
-      progressRef.current = progress;
-      shaderMount.setUniforms({ u_progress: progress });
-
-      if (elapsed < 1) {
-        animationFrameRef.current = requestAnimationFrame(animate);
-        return;
-      }
-
-      animationFrameRef.current = null;
-      settleOnVariant();
-    };
-
-    animationFrameRef.current = requestAnimationFrame(animate);
-
-    return () => {
-      if (animationGenerationRef.current === animationGeneration) {
-        animationGenerationRef.current += 1;
-      }
-
       if (animationFrameRef.current !== null) {
         cancelAnimationFrame(animationFrameRef.current);
         animationFrameRef.current = null;
       }
+      frameTimeRef.current = null;
+      weightsRef.current = targetWeights;
+      velocitiesRef.current = getEmptyWeights();
+      shaderMount.setUniforms(getWeightUniforms(targetWeights));
+      return;
+    }
+
+    if (animationFrameRef.current !== null) {
+      return;
+    }
+
+    const animate = (now: number) => {
+      const previousFrameTime = frameTimeRef.current ?? now;
+      const delta = Math.min(
+        Math.max((now - previousFrameTime) / 1000, 0),
+        maximumFrameDelta,
+      );
+      frameTimeRef.current = now;
+
+      const nextWeights = getEmptyWeights();
+      const nextVelocities = getEmptyWeights();
+      let maximumDistance = 0;
+      let maximumVelocity = 0;
+
+      for (let index = 0; index < nextWeights.length; index += 1) {
+        const target = targetWeightsRef.current[index];
+        const displacement = weightsRef.current[index] - target;
+        const velocity = velocitiesRef.current[index];
+        const decay = Math.exp(-transitionAngularFrequency * delta);
+        const springTerm =
+          velocity + transitionAngularFrequency * displacement;
+        const nextDisplacement =
+          (displacement + springTerm * delta) * decay;
+        const nextVelocity =
+          (velocity -
+            transitionAngularFrequency * springTerm * delta) *
+          decay;
+
+        nextWeights[index] = target + nextDisplacement;
+        nextVelocities[index] = nextVelocity;
+        maximumDistance = Math.max(
+          maximumDistance,
+          Math.abs(nextDisplacement),
+        );
+        maximumVelocity = Math.max(
+          maximumVelocity,
+          Math.abs(nextVelocity),
+        );
+      }
+
+      if (
+        maximumDistance <= springPositionTolerance &&
+        maximumVelocity <= springVelocityTolerance
+      ) {
+        weightsRef.current = targetWeightsRef.current;
+        velocitiesRef.current = getEmptyWeights();
+        frameTimeRef.current = null;
+        animationFrameRef.current = null;
+        shaderMount.setUniforms(
+          getWeightUniforms(targetWeightsRef.current),
+        );
+        return;
+      }
+
+      weightsRef.current = nextWeights;
+      velocitiesRef.current = nextVelocities;
+      shaderMount.setUniforms(getWeightUniforms(nextWeights));
+      animationFrameRef.current = requestAnimationFrame(animate);
     };
+
+    frameTimeRef.current = performance.now();
+    animationFrameRef.current = requestAnimationFrame(animate);
   }, [shouldAnimate, variant]);
+
+  useEffect(
+    () => () => {
+      if (animationFrameRef.current !== null) {
+        cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = null;
+      }
+    },
+    [],
+  );
 
   return (
     <div

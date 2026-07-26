@@ -1,81 +1,45 @@
 import { useCallback, useEffect, useState } from "react";
 
 export type ColorTheme = "light" | "dark";
-export type ThemePreference = "system" | ColorTheme;
 
 const themeStorageKey = "enesgules-theme";
-const colorSchemeQuery = "(prefers-color-scheme: dark)";
 
-const nextThemePreference = {
-  system: "light",
+const nextTheme = {
   light: "dark",
-  dark: "system",
-} satisfies Record<ThemePreference, ThemePreference>;
+  dark: "light",
+} satisfies Record<ColorTheme, ColorTheme>;
 
-function readSystemTheme(): ColorTheme {
+function readTheme(): ColorTheme {
   if (typeof window === "undefined") {
     return "light";
   }
 
-  return window.matchMedia(colorSchemeQuery).matches ? "dark" : "light";
-}
-
-function readThemePreference(): ThemePreference {
-  if (typeof window === "undefined") {
-    return "system";
-  }
-
   const storedTheme = window.localStorage.getItem(themeStorageKey);
 
-  if (
-    storedTheme === "system" ||
-    storedTheme === "light" ||
-    storedTheme === "dark"
-  ) {
-    return storedTheme;
-  }
-
-  return "system";
+  return storedTheme === "dark" ? "dark" : "light";
 }
 
-export function getNextThemePreference(theme: ThemePreference) {
-  return nextThemePreference[theme];
+export function getNextTheme(theme: ColorTheme) {
+  return nextTheme[theme];
 }
 
 export function useTheme() {
-  const [preference, setPreference] =
-    useState<ThemePreference>(readThemePreference);
-  const [systemTheme, setSystemTheme] = useState<ColorTheme>(readSystemTheme);
-  const resolvedTheme = preference === "system" ? systemTheme : preference;
+  const [theme, setTheme] = useState<ColorTheme>(readTheme);
 
   useEffect(() => {
-    const mediaQuery = window.matchMedia(colorSchemeQuery);
-
-    function updateSystemTheme(event: MediaQueryListEvent) {
-      setSystemTheme(event.matches ? "dark" : "light");
-    }
-
-    setSystemTheme(mediaQuery.matches ? "dark" : "light");
-    mediaQuery.addEventListener("change", updateSystemTheme);
-
-    return () => mediaQuery.removeEventListener("change", updateSystemTheme);
-  }, []);
-
-  useEffect(() => {
-    document.documentElement.dataset.theme = resolvedTheme;
-  }, [resolvedTheme]);
-
-  useEffect(() => {
-    window.localStorage.setItem(themeStorageKey, preference);
-  }, [preference]);
+    document.documentElement.dataset.theme = theme;
+    document
+      .querySelector('meta[name="theme-color"]')
+      ?.setAttribute("content", theme === "dark" ? "#101411" : "#f6f6f3");
+    window.localStorage.setItem(themeStorageKey, theme);
+  }, [theme]);
 
   const cycleTheme = useCallback(() => {
-    setPreference((current) => nextThemePreference[current]);
+    setTheme((current) => nextTheme[current]);
   }, []);
 
   return {
     cycleTheme,
-    preference,
-    resolvedTheme,
+    theme,
   };
 }
