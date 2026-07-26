@@ -26,7 +26,7 @@ const projects: ReadonlyArray<Project> = [
   {
     name: "Context7",
     description:
-      "Current, version-specific library docs and code examples for AI coding tools.",
+      "Up-to-date, version-specific library docs and code examples for AI coding tools.",
     href: "https://context7.com",
     dither: "context7",
   },
@@ -311,7 +311,7 @@ export function WordmarkStage() {
               >
                 Upstash
               </ExternalFaviconLink>
-              . It gives AI coding tools current, version-specific library docs
+              . It gives AI coding tools up-to-date, version-specific library docs
               and code examples. The open-source project has{" "}
               <Context7StarCount />.
             </p>
