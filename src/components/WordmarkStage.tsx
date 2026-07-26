@@ -1,4 +1,5 @@
 import {
+  ArrowRight01Icon,
   GithubIcon,
   Linkedin01Icon,
   Mail01Icon,
@@ -6,7 +7,7 @@ import {
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import type { IconSvgElement } from "@hugeicons/react";
-import { useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useTheme } from "../theme/useTheme";
 import {
   DitherBackdrop,
@@ -53,6 +54,75 @@ const projects: ReadonlyArray<Project> = [
   },
 ];
 
+const context7RepositoryUrl = "https://github.com/upstash/context7";
+const context7RepositoryApiUrl =
+  "https://api.github.com/repos/upstash/context7";
+const fallbackContext7StarCount = 60_000;
+const compactNumberFormatter = new Intl.NumberFormat("en", {
+  maximumFractionDigits: 0,
+  notation: "compact",
+});
+
+let context7StarCountRequest: Promise<number | null> | null = null;
+
+function readStargazerCount(value: unknown) {
+  if (
+    typeof value !== "object" ||
+    value === null ||
+    !("stargazers_count" in value)
+  ) {
+    return null;
+  }
+
+  const count = value.stargazers_count;
+  return typeof count === "number" ? count : null;
+}
+
+function fetchContext7StarCount() {
+  if (!context7StarCountRequest) {
+    context7StarCountRequest = fetch(context7RepositoryApiUrl)
+      .then(async (response) => {
+        if (!response.ok) {
+          return null;
+        }
+
+        return readStargazerCount(await response.json());
+      })
+      .catch(() => null);
+  }
+
+  return context7StarCountRequest;
+}
+
+function Context7StarCount() {
+  const [starCount, setStarCount] = useState(fallbackContext7StarCount);
+
+  useEffect(() => {
+    let isActive = true;
+
+    void fetchContext7StarCount().then((count) => {
+      if (isActive && count !== null) {
+        setStarCount(count);
+      }
+    });
+
+    return () => {
+      isActive = false;
+    };
+  }, []);
+
+  return (
+    <a
+      className="context7-stars"
+      href={context7RepositoryUrl}
+      target="_blank"
+      rel="noreferrer"
+    >
+      <span>{compactNumberFormatter.format(starCount)}</span> stars on GitHub
+    </a>
+  );
+}
+
 type SocialSentenceLinkProps = {
   href: string;
   icon: IconSvgElement;
@@ -74,10 +144,13 @@ function SocialSentenceLink({
       target={newTab ? "_blank" : undefined}
     >
       <span className="social-sentence__label">{label}</span>
-      <span className="social-sentence__icon" aria-hidden="true">
+      <span
+        className="link-icon-tile social-sentence__icon"
+        aria-hidden="true"
+      >
         <HugeiconsIcon
           icon={icon}
-          size={17}
+          size={15}
           strokeWidth={1.7}
         />
       </span>
@@ -150,7 +223,7 @@ function SocialFooter() {
         <SocialSentenceLink
           href="https://x.com/abdushbag"
           icon={NewTwitterIcon}
-          label="X"
+          label="X (Twitter)"
           newTab
         />
         {" "}and{" "}
@@ -216,12 +289,16 @@ export function WordmarkStage() {
               at{" "}
               <ExternalFaviconLink
                 href="https://upstash.com"
-                faviconSrc="https://upstash.com/icons/favicon-32x32.png"
+                faviconSrc={
+                  resolvedTheme === "dark"
+                    ? "/brand/upstash-icon-dark.svg"
+                    : "/brand/upstash-icon-light.svg"
+                }
               >
                 Upstash
               </ExternalFaviconLink>
               . It gives AI coding agents current, version-specific library
-              docs and code examples.
+              docs and code examples. It has <Context7StarCount />.
             </p>
             <p>
               I also build small open-source tools and interactive ways to
@@ -251,8 +328,15 @@ export function WordmarkStage() {
                 <span className="project-entry__description">
                   {project.description}
                 </span>
-                <span className="project-entry__arrow" aria-hidden="true">
-                  ↗
+                <span
+                  className="link-icon-tile project-entry__arrow"
+                  aria-hidden="true"
+                >
+                  <HugeiconsIcon
+                    icon={ArrowRight01Icon}
+                    size={15}
+                    strokeWidth={1.7}
+                  />
                 </span>
               </a>
             ))}

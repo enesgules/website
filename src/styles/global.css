@@ -6,6 +6,9 @@
   --ink-muted: rgb(var(--ink-rgb) / 59%);
   --ink-faint: rgb(var(--ink-rgb) / 12%);
   --image-outline: rgb(0 0 0 / 10%);
+  --icon-tile-surface: #fff;
+  --icon-tile-border: rgb(0 0 0 / 10%);
+  --icon-tile-shadow: 0 1px 2px rgb(0 0 0 / 7%);
   --avatar-shadow:
     0 1px 2px rgb(0 0 0 / 6%),
     0 4px 12px rgb(0 0 0 / 8%);
@@ -170,27 +173,48 @@ canvas {
   transition: text-decoration-color 160ms ease;
 }
 
+.context7-stars span {
+  font-variant-numeric: tabular-nums;
+}
+
 .inline-favicon-link {
   position: relative;
   display: inline-block;
+}
+
+.link-icon-tile {
+  display: inline-flex;
+  width: 1.5rem;
+  height: 1.5rem;
+  border: 1px solid var(--icon-tile-border);
+  border-radius: 0.45rem;
+  align-items: center;
+  justify-content: center;
+  background: var(--icon-tile-surface);
+  box-shadow: var(--icon-tile-shadow);
+  color: var(--ink);
 }
 
 .inline-favicon-link__icon {
   position: absolute;
   bottom: calc(100% + 0.3rem);
   left: 50%;
-  width: 1.25rem;
-  height: 1.25rem;
   opacity: 0;
   pointer-events: none;
   filter: blur(4px);
-  object-fit: contain;
   transform: translate(-50%, 0.3rem) scale(0.25);
   transform-origin: bottom center;
   transition:
     opacity 150ms ease,
     filter 180ms ease,
     transform 200ms var(--ease-out);
+}
+
+.inline-favicon-link__image {
+  display: block;
+  width: 1rem;
+  height: 1rem;
+  object-fit: contain;
 }
 
 .inline-favicon-link:focus-visible .inline-favicon-link__icon {
@@ -233,9 +257,14 @@ canvas {
 
 .project-entry__arrow {
   color: var(--ink-muted);
-  font-size: 0.875rem;
+  transition: color 160ms ease;
+}
+
+.project-entry__arrow svg {
   opacity: var(--project-arrow-opacity);
-  transition: opacity 160ms ease;
+  transition:
+    opacity 160ms ease,
+    transform 180ms var(--ease-out);
 }
 
 .profile-footer {
@@ -251,7 +280,7 @@ canvas {
 .social-sentence__link {
   position: relative;
   display: inline-block;
-  padding-bottom: 1.25rem;
+  padding-bottom: 1.65rem;
   color: var(--ink);
   text-decoration-color: var(--ink-faint);
   text-decoration-thickness: 1px;
@@ -260,20 +289,15 @@ canvas {
 }
 
 .social-sentence__link[data-icon-position="top"] {
-  padding-top: 1.25rem;
+  padding-top: 1.65rem;
   padding-bottom: 0;
 }
 
 .social-sentence__icon {
   position: absolute;
   z-index: 1;
-  top: calc(100% - 1.1rem);
+  top: calc(100% - 1.5rem);
   left: 50%;
-  display: inline-flex;
-  width: 1.1rem;
-  height: 1.1rem;
-  align-items: center;
-  justify-content: center;
   opacity: 0;
   pointer-events: none;
   filter: blur(4px);
@@ -447,7 +471,12 @@ canvas {
   }
 
   .project-entry:hover .project-entry__arrow {
+    color: var(--ink);
+  }
+
+  .project-entry:hover .project-entry__arrow svg {
     opacity: var(--project-arrow-hover-opacity);
+    transform: translateX(0.1rem);
   }
 
   .social-sentence__link:hover {
@@ -478,6 +507,9 @@ canvas {
     --ink-muted: rgb(var(--ink-rgb) / 68%);
     --ink-faint: rgb(var(--ink-rgb) / 15%);
     --image-outline: rgb(255 255 255 / 10%);
+    --icon-tile-surface: #1c231d;
+    --icon-tile-border: rgb(255 255 255 / 10%);
+    --icon-tile-shadow: 0 1px 2px rgb(0 0 0 / 32%);
     --avatar-shadow:
       0 1px 2px rgb(0 0 0 / 40%),
       0 6px 18px rgb(0 0 0 / 46%);
@@ -512,6 +544,9 @@ canvas {
   --ink-muted: rgb(var(--ink-rgb) / 68%);
   --ink-faint: rgb(var(--ink-rgb) / 15%);
   --image-outline: rgb(255 255 255 / 10%);
+  --icon-tile-surface: #1c231d;
+  --icon-tile-border: rgb(255 255 255 / 10%);
+  --icon-tile-shadow: 0 1px 2px rgb(0 0 0 / 32%);
   --avatar-shadow:
     0 1px 2px rgb(0 0 0 / 40%),
     0 6px 18px rgb(0 0 0 / 46%);
@@ -569,6 +604,7 @@ canvas {
 @media (prefers-reduced-motion: reduce) {
   .inline-favicon-link__icon,
   .project-entry__arrow,
+  .project-entry__arrow svg,
   .profile-section p a,
   .social-sentence__link,
   .social-sentence__icon,

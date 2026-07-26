@@ -19,14 +19,18 @@ export function ExternalFaviconLink({
       rel="noreferrer"
     >
       {children}
-      <img
-        className="inline-favicon-link__icon"
-        src={faviconSrc}
-        alt=""
-        width="20"
-        height="20"
+      <span
+        className="link-icon-tile inline-favicon-link__icon"
         aria-hidden="true"
-      />
+      >
+        <img
+          className="inline-favicon-link__image"
+          src={faviconSrc}
+          alt=""
+          width="16"
+          height="16"
+        />
+      </span>
     </a>
   );
 }
