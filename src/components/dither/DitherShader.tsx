@@ -177,7 +177,7 @@ function DitherLayer({
         offsetX={preset.offsetX}
         offsetY={preset.offsetY}
         minPixelRatio={1}
-        maxPixelCount={compactViewport ? 650_000 : 1_200_000}
+        maxPixelCount={compactViewport ? 400_000 : 800_000}
       />
     </div>
   );
@@ -212,6 +212,10 @@ export function DitherShader({ theme, variant }: DitherShaderProps) {
   }, []);
 
   useLayoutEffect(() => {
+    if (preferences.compactViewport) {
+      return;
+    }
+
     setLayers((current) => {
       if (current[current.active] === variant) {
         return current;
@@ -231,27 +235,39 @@ export function DitherShader({ theme, variant }: DitherShaderProps) {
         active: "a",
       };
     });
-  }, [variant]);
+  }, [preferences.compactViewport, variant]);
 
   const shouldAnimate =
     !preferences.reduceMotion && !preferences.reduceData;
 
   return (
     <div className="dither-field" data-variant={variant} aria-hidden="true">
-      <DitherLayer
-        variant={layers.a}
-        active={layers.active === "a"}
-        shouldAnimate={shouldAnimate}
-        compactViewport={preferences.compactViewport}
-        theme={theme}
-      />
-      <DitherLayer
-        variant={layers.b}
-        active={layers.active === "b"}
-        shouldAnimate={shouldAnimate}
-        compactViewport={preferences.compactViewport}
-        theme={theme}
-      />
+      {preferences.compactViewport ? (
+        <DitherLayer
+          variant={variant}
+          active
+          shouldAnimate={shouldAnimate}
+          compactViewport
+          theme={theme}
+        />
+      ) : (
+        <>
+          <DitherLayer
+            variant={layers.a}
+            active={layers.active === "a"}
+            shouldAnimate={shouldAnimate}
+            compactViewport={false}
+            theme={theme}
+          />
+          <DitherLayer
+            variant={layers.b}
+            active={layers.active === "b"}
+            shouldAnimate={shouldAnimate}
+            compactViewport={false}
+            theme={theme}
+          />
+        </>
+      )}
     </div>
   );
 }

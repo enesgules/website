@@ -267,7 +267,7 @@ export function WordmarkStage() {
           </div>
           <img
             className="profile__avatar"
-            src="https://avatars.githubusercontent.com/u/101020733?v=4"
+            src="/profile.jpg"
             alt=""
             width="44"
             height="44"
@@ -282,7 +282,7 @@ export function WordmarkStage() {
               I build{" "}
               <ExternalFaviconLink
                 href="https://context7.com"
-                faviconSrc="https://context7.com/favicon.ico"
+                faviconSrc="/brand/context7.png"
               >
                 Context7
               </ExternalFaviconLink>{" "}
