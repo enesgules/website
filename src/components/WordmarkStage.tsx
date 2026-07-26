@@ -46,7 +46,8 @@ const projects: ReadonlyArray<Project> = [
   },
   {
     name: "DKT Materyal",
-    description: "Printable materials for Turkish speech therapists.",
+    description:
+      "Generate printable materials with AI for Turkish speech therapists.",
     href: "https://dktmateryal.com",
     dither: "dkt",
   },
@@ -133,6 +134,7 @@ function Context7StarCount() {
 type SocialSentenceLinkProps = {
   href: string;
   icon: IconSvgElement;
+  iconSize?: number;
   label: string;
   newTab?: boolean;
 };
@@ -140,6 +142,7 @@ type SocialSentenceLinkProps = {
 function SocialSentenceLink({
   href,
   icon,
+  iconSize = 15,
   label,
   newTab = false,
 }: SocialSentenceLinkProps) {
@@ -157,7 +160,7 @@ function SocialSentenceLink({
       >
         <HugeiconsIcon
           icon={icon}
-          size={15}
+          size={iconSize}
           strokeWidth={1.7}
         />
       </span>
@@ -230,6 +233,7 @@ function SocialFooter() {
         <SocialSentenceLink
           href="https://x.com/abdushbag"
           icon={NewTwitterIcon}
+          iconSize={14}
           label="X"
           newTab
         />
