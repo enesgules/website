@@ -94,6 +94,34 @@ canvas {
     max(1rem, env(safe-area-inset-right));
 }
 
+.profile[data-text-backdrop="section-haze"] :is(
+    .profile__header,
+    .profile-section,
+    .profile-footer
+  ) {
+  position: relative;
+  isolation: isolate;
+}
+
+.profile[data-text-backdrop="section-haze"] :is(
+    .profile__header,
+    .profile-section,
+    .profile-footer
+  )::before {
+  position: absolute;
+  z-index: -1;
+  inset: -1.5rem -2.25rem;
+  background: radial-gradient(
+    ellipse at center,
+    rgb(var(--paper-rgb) / 68%) 0%,
+    rgb(var(--paper-rgb) / 36%) 48%,
+    transparent 78%
+  );
+  content: "";
+  filter: blur(8px);
+  pointer-events: none;
+}
+
 .profile__header h1,
 .profile__header p,
 .profile-section h2,
@@ -276,7 +304,7 @@ canvas {
 
 .project-entry__title {
   font-size: 1rem;
-  font-weight: 600;
+  font-weight: 400;
   letter-spacing: -0.02em;
   line-height: 1.4;
 }

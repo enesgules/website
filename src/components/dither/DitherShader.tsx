@@ -1,9 +1,7 @@
 import {
   DitheringShapes,
-  DitheringTypes,
   getShaderColorFromString,
   type DitheringShape,
-  type DitheringType,
   type PaperShaderElement,
 } from "@paper-design/shaders";
 import { ShaderMount } from "@paper-design/shaders-react";
@@ -22,8 +20,36 @@ type DitherPreset = {
   shape: DitheringShape;
   size: number;
   speed: number;
-  type: DitheringType;
 };
+
+export type DitherTransition =
+  | "morph"
+  | "crossfade"
+  | "scatter"
+  | "radial"
+  | "sweep"
+  | "vortex"
+  | "signal-tear"
+  | "noise-flood"
+  | "crossfade-swell"
+  | "crossfade-interference"
+  | "crossfade-chromatic"
+  | "crossfade-orbit";
+
+const ditherTransitionValues = {
+  morph: 0,
+  crossfade: 1,
+  scatter: 2,
+  radial: 3,
+  sweep: 4,
+  vortex: 5,
+  "signal-tear": 6,
+  "noise-flood": 7,
+  "crossfade-swell": 8,
+  "crossfade-interference": 9,
+  "crossfade-chromatic": 10,
+  "crossfade-orbit": 11,
+} satisfies Record<DitherTransition, number>;
 
 const ditherPresets = {
   idle: {
@@ -33,10 +59,9 @@ const ditherPresets = {
     },
     mask: [0.64, 0.2, 0.92],
     shape: "simplex",
-    type: "4x4",
     size: 1.65,
     scale: 0.92,
-    speed: 0.62,
+    speed: 0.46,
     rotation: -10,
     offsetX: 0.14,
     offsetY: -0.24,
@@ -48,10 +73,9 @@ const ditherPresets = {
     },
     mask: [0.72, 0.26, 0.9],
     shape: "ripple",
-    type: "2x2",
     size: 1.7,
     scale: 0.9,
-    speed: 0.42,
+    speed: 0.24,
     rotation: 0,
     offsetX: 0.3,
     offsetY: -0.24,
@@ -63,10 +87,9 @@ const ditherPresets = {
     },
     mask: [0.18, 0.46, 0.88],
     shape: "dots",
-    type: "4x4",
     size: 2.2,
     scale: 1.2,
-    speed: 0.8,
+    speed: 0.42,
     rotation: 12,
     offsetX: -0.42,
     offsetY: 0,
@@ -78,10 +101,9 @@ const ditherPresets = {
     },
     mask: [0.76, 0.64, 0.96],
     shape: "sphere",
-    type: "8x8",
     size: 1.9,
     scale: 0.94,
-    speed: 0.82,
+    speed: 0.63,
     rotation: 0,
     offsetX: 0.38,
     offsetY: 0.28,
@@ -93,7 +115,6 @@ const ditherPresets = {
     },
     mask: [0.32, 0.7, 1.12],
     shape: "wave",
-    type: "8x8",
     size: 1.75,
     scale: 0.84,
     speed: 0.69,
@@ -157,6 +178,7 @@ function useShaderPreferences() {
 
 type DitherShaderProps = {
   theme: ColorTheme;
+  transition?: DitherTransition;
   variant: DitherVariant;
 };
 
@@ -168,7 +190,7 @@ const ditherVariants = [
   "dkt",
 ] satisfies DitherVariant[];
 
-type VariantWeights = [number, number, number, number, number];
+export type VariantWeights = [number, number, number, number, number];
 
 function getShaderPreset(
   variant: DitherVariant,
@@ -185,11 +207,12 @@ function getShaderPreset(
     scale: preset.scale,
     shape: DitheringShapes[preset.shape],
     speed: preset.speed,
-    type: DitheringTypes[preset.type],
   };
 }
 
-function getVariantWeights(variant: DitherVariant): VariantWeights {
+export function getVariantWeights(
+  variant: DitherVariant,
+): VariantWeights {
   return [
     variant === "idle" ? 1 : 0,
     variant === "context7" ? 1 : 0,
@@ -203,14 +226,33 @@ function getEmptyWeights(): VariantWeights {
   return [0, 0, 0, 0, 0];
 }
 
-function getWeightUniforms(weights: VariantWeights) {
+export function getWeightUniforms(weights: VariantWeights) {
   return {
     u_weights: weights.slice(0, 4),
     u_dktWeight: weights[4],
   };
 }
 
-function getPresetUniforms(theme: ColorTheme) {
+export function getSpatialTransitionUniforms({
+  progress,
+  target,
+}: {
+  progress: number;
+  target: DitherVariant;
+}) {
+  const targetPreset = ditherPresets[target];
+
+  return {
+    u_targetIndex: ditherVariants.indexOf(target),
+    u_transitionOrigin: targetPreset.mask.slice(0, 2),
+    u_transitionProgress: progress,
+  };
+}
+
+export function getPresetUniforms(
+  theme: ColorTheme,
+  transition: DitherTransition,
+) {
   const presets = ditherVariants.map((variant) =>
     getShaderPreset(variant, theme),
   );
@@ -219,6 +261,8 @@ function getPresetUniforms(theme: ColorTheme) {
     u_colorBack: getShaderColorFromString(
       theme === "dark" ? "#101411" : "#f6f6f3",
     ),
+    u_transitionStyle: ditherTransitionValues[transition],
+    ...getSpatialTransitionUniforms({ progress: 1, target: "idle" }),
     "u_colorFronts[0]": presets.map((preset) => preset.color),
     "u_masks[0]": presets.map((preset) => preset.mask),
     "u_motion[0]": presets.map((preset) => [
@@ -228,9 +272,9 @@ function getPresetUniforms(theme: ColorTheme) {
     "u_offsets[0]": presets.map((preset) => preset.offset),
     "u_params[0]": presets.map((preset) => [
       preset.shape,
-      preset.type,
       preset.pxSize,
       preset.scale,
+      0,
     ]),
   };
 }
@@ -242,6 +286,7 @@ const springVelocityTolerance = 0.005;
 
 export function DitherShader({
   theme,
+  transition = "crossfade",
   variant,
 }: DitherShaderProps) {
   const preferences = useShaderPreferences();
@@ -254,7 +299,7 @@ export function DitherShader({
     getVariantWeights(variant),
   );
   const [initialUniforms] = useState(() => ({
-    ...getPresetUniforms(theme),
+    ...getPresetUniforms(theme, transition),
     ...getWeightUniforms(getVariantWeights(variant)),
   }));
   const shouldAnimate =
@@ -267,8 +312,8 @@ export function DitherShader({
       return;
     }
 
-    shaderMount.setUniforms(getPresetUniforms(theme));
-  }, [theme]);
+    shaderMount.setUniforms(getPresetUniforms(theme, transition));
+  }, [theme, transition]);
 
   useEffect(() => {
     const shaderMount = shaderElementRef.current?.paperShaderMount;

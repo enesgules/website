@@ -63,6 +63,7 @@ export function DitherBackdrop({
         {canRenderShader ? (
           <DitherShader
             theme={theme}
+            transition="crossfade"
             variant={variant}
           />
         ) : (

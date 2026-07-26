@@ -15,6 +15,10 @@ uniform vec2 u_motion[5];
 uniform vec3 u_masks[5];
 uniform vec4 u_weights;
 uniform float u_dktWeight;
+uniform float u_transitionStyle;
+uniform float u_transitionProgress;
+uniform float u_targetIndex;
+uniform vec2 u_transitionOrigin;
 
 out vec4 fragColor;
 
@@ -81,37 +85,6 @@ float getSimplexNoise(vec2 uv, float t) {
   float noise = 0.5 * snoise(uv - vec2(0.0, 0.3 * t));
   noise += 0.5 * snoise(2.0 * uv + vec2(0.0, 0.32 * t));
   return noise;
-}
-
-const int bayer2x2[4] = int[4](0, 2, 3, 1);
-const int bayer4x4[16] = int[16](
-  0, 8, 2, 10,
-  12, 4, 14, 6,
-  3, 11, 1, 9,
-  15, 7, 13, 5
-);
-const int bayer8x8[64] = int[64](
-  0, 32, 8, 40, 2, 34, 10, 42,
-  48, 16, 56, 24, 50, 18, 58, 26,
-  12, 44, 4, 36, 14, 46, 6, 38,
-  60, 28, 52, 20, 62, 30, 54, 22,
-  3, 35, 11, 43, 1, 33, 9, 41,
-  51, 19, 59, 27, 49, 17, 57, 25,
-  15, 47, 7, 39, 13, 45, 5, 37,
-  63, 31, 55, 23, 61, 29, 53, 21
-);
-
-float getBayerValue(vec2 uv, int size) {
-  ivec2 pos = ivec2(fract(uv / float(size)) * float(size));
-  int index = pos.y * size + pos.x;
-
-  if (size == 2) {
-    return float(bayer2x2[index]) / 4.0;
-  }
-  if (size == 4) {
-    return float(bayer4x4[index]) / 16.0;
-  }
-  return float(bayer8x8[index]) / 64.0;
 }
 
 vec2 rotateUv(vec2 uv, float degrees) {
@@ -217,18 +190,11 @@ float evaluateShape(vec2 shapeUv, float shapeType, float t) {
   return shape * step(0.0, depth);
 }
 
-float getDitherThreshold(vec2 pixelUv, float type) {
-  int ditherType = int(floor(type));
-  if (ditherType == 1) {
-    return hash21(pixelUv);
-  }
-  if (ditherType == 2) {
-    return 1.0 - getBayerValue(pixelUv, 2);
-  }
-  if (ditherType == 3) {
-    return 1.0 - getBayerValue(pixelUv, 4);
-  }
-  return 1.0 - getBayerValue(pixelUv, 8);
+float getDitherThreshold(vec2 pixelUv) {
+  vec2 cell = floor(pixelUv);
+  return fract(
+    cell.x * 0.754877666 + cell.y * 0.569840296
+  );
 }
 
 float getFieldMask(vec2 screenUv, vec3 maskData) {
@@ -236,6 +202,103 @@ float getFieldMask(vec2 screenUv, vec3 maskData) {
   distanceFromCenter.x *= 0.78;
   float distanceValue = length(distanceFromCenter);
   return 1.0 - smoothstep(0.0, maskData.z, distanceValue);
+}
+
+float getSpatialTransitionGate(
+  vec2 screenUv,
+  vec2 pixelUv
+) {
+  float progress = clamp(u_transitionProgress, 0.0, 1.0);
+  if (progress <= 0.001) {
+    return 0.0;
+  }
+  if (progress >= 0.999) {
+    return 1.0;
+  }
+
+  vec2 cell = floor(pixelUv);
+  float cellNoise = hash21(cell + vec2(17.0, 43.0));
+
+  if (u_transitionStyle < 2.5) {
+    return smoothstep(
+      cellNoise - 0.08,
+      cellNoise + 0.08,
+      progress
+    );
+  }
+
+  if (u_transitionStyle < 3.5) {
+    float radius = mix(-0.12, 1.5, progress);
+    float distanceFromOrigin = distance(screenUv, u_transitionOrigin);
+    float noisyDistance = distanceFromOrigin + (cellNoise - 0.5) * 0.09;
+    return 1.0 - smoothstep(
+      radius - 0.07,
+      radius + 0.07,
+      noisyDistance
+    );
+  }
+
+  if (u_transitionStyle < 4.5) {
+    float sweepPosition = 0.5 * (
+      screenUv.x + 1.0 - screenUv.y
+    );
+    float sweepEdge = mix(-0.12, 1.12, progress);
+    float noisyPosition = sweepPosition + (cellNoise - 0.5) * 0.08;
+    return 1.0 - smoothstep(
+      sweepEdge - 0.055,
+      sweepEdge + 0.055,
+      noisyPosition
+    );
+  }
+
+  if (u_transitionStyle < 5.5) {
+    vec2 vortexUv = screenUv - u_transitionOrigin;
+    vortexUv.x *= u_resolution.x / u_resolution.y;
+    float vortexRadius = length(vortexUv);
+    float vortexAngle = atan(vortexUv.y, vortexUv.x) / TWO_PI + 0.5;
+    float vortexOrder = fract(
+      vortexAngle + vortexRadius * 1.85 + cellNoise * 0.035
+    );
+    return smoothstep(
+      vortexOrder - 0.045,
+      vortexOrder + 0.045,
+      progress
+    );
+  }
+
+  if (u_transitionStyle < 6.5) {
+    float scanline = floor(screenUv.y * 34.0);
+    float bandShift = hash11(scanline * 7.13) - 0.5;
+    float tear = snoise(vec2(scanline * 0.08, progress * 3.0));
+    float signalOrder = clamp(
+      screenUv.x + bandShift * 0.72 + tear * 0.16,
+      0.0,
+      1.0
+    );
+    float signalGate = smoothstep(
+      signalOrder - 0.025,
+      signalOrder + 0.025,
+      progress
+    );
+    float dropout = step(
+      0.94,
+      hash21(vec2(scanline, floor(progress * 18.0)))
+    );
+    return mix(signalGate, 1.0 - signalGate, dropout);
+  }
+
+  vec2 floodUv = screenUv * vec2(
+    u_resolution.x / u_resolution.y,
+    1.0
+  );
+  float floodNoise = 0.5 + 0.31 * snoise(floodUv * 3.6)
+    + 0.14 * snoise(floodUv * 8.5 + 4.2)
+    + (cellNoise - 0.5) * 0.05;
+  return smoothstep(
+    floodNoise - 0.065,
+    floodNoise + 0.065,
+    progress
+  );
 }
 
 float getVariantWeight(int index) {
@@ -250,10 +313,16 @@ void main() {
   float maxWeight = 0.0;
   for (int i = 0; i < 5; i++) {
     float weight = getVariantWeight(i);
-    sharedPxSize += weight * u_params[i].z;
+    sharedPxSize += weight * u_params[i].y;
     maxWeight = max(maxWeight, weight);
   }
   sharedPxSize *= u_pixelRatio;
+  float transitionAmount = clamp((1.0 - maxWeight) * 2.0, 0.0, 1.0);
+  float coverageFeather = mix(
+    0.008,
+    0.085,
+    transitionAmount
+  );
   vec2 centeredPosition = gl_FragCoord.xy - 0.5 * u_resolution;
 
   vec2 sharedPixelUv = centeredPosition / sharedPxSize;
@@ -266,12 +335,22 @@ void main() {
     gl_FragCoord.x / u_resolution.x,
     1.0 - gl_FragCoord.y / u_resolution.y
   );
+  float threshold = getDitherThreshold(sharedPixelUv);
+  float spatialTransitionGate = getSpatialTransitionGate(
+    screenUv,
+    sharedPixelUv
+  );
 
   float fieldShape = 0.0;
-  float fieldThreshold = 0.0;
   float fieldMask = 0.0;
   vec3 frontLinear = vec3(0.0);
   float frontAlpha = 0.0;
+  vec3 crossfadeColor = vec3(0.0);
+  float crossfadeOpacity = 0.0;
+  vec3 sourceColor = vec3(0.0);
+  vec3 targetColor = vec3(0.0);
+  float sourceOpacity = 0.0;
+  float targetOpacity = 0.0;
 
   for (int i = 0; i < 5; i++) {
     float weight = getVariantWeight(i);
@@ -279,25 +358,55 @@ void main() {
       continue;
     }
 
+    bool isTarget = abs(float(i) - u_targetIndex) < 0.5;
+    float crossfadeWeight = weight;
+    if (u_transitionStyle > 1.5 && u_transitionStyle < 7.5) {
+      crossfadeWeight = isTarget
+        ? spatialTransitionGate
+        : 1.0 - spatialTransitionGate;
+    }
+    if (u_transitionStyle > 7.5 && u_transitionStyle < 8.5) {
+      float exposure = 1.0 + 0.9 * sin(u_transitionProgress * PI);
+      crossfadeWeight *= exposure;
+    }
+
     vec4 params = u_params[i];
     vec2 motion = u_motion[i];
+    vec2 sampleUv = sharedNormalizedUv;
+    vec2 sampleScreenUv = screenUv;
+    if (u_transitionStyle > 10.5 && u_transitionStyle < 11.5) {
+      float orbitAmount = 0.14 * sin(u_transitionProgress * PI);
+      float orbitAngle = u_transitionProgress * PI * 1.6;
+      vec2 orbitOffset = orbitAmount * vec2(
+        cos(orbitAngle),
+        sin(orbitAngle)
+      );
+      if (!isTarget) {
+        orbitOffset *= -1.0;
+      }
+      sampleUv += orbitOffset;
+      sampleScreenUv += orbitOffset;
+    }
     vec2 shapeUv = getShapeUv(
-      sharedNormalizedUv,
+      sampleUv,
       params.x,
-      params.w,
+      params.z,
       motion.x,
       u_offsets[i]
     );
-    fieldShape += weight * evaluateShape(
+    float shape = evaluateShape(
       shapeUv,
       params.x,
       0.5 * u_time * motion.y
     );
-    fieldThreshold += weight * getDitherThreshold(
-      sharedPixelUv,
-      params.y
-    );
-    fieldMask += weight * getFieldMask(screenUv, u_masks[i]);
+    float mask = getFieldMask(sampleScreenUv, u_masks[i]);
+    float coverage = smoothstep(
+      threshold - coverageFeather,
+      threshold + coverageFeather,
+      shape
+    ) * mask;
+    fieldShape += weight * shape;
+    fieldMask += weight * mask;
 
     vec4 frontColor = u_colorFronts[i];
     frontLinear += weight * pow(
@@ -305,17 +414,41 @@ void main() {
       vec3(2.2)
     );
     frontAlpha += weight * frontColor.a;
+    vec3 blendColor = frontColor.rgb;
+    if (u_transitionStyle > 9.5 && u_transitionStyle < 10.5) {
+      float splitAmount = 0.92 * sin(u_transitionProgress * PI);
+      float luminance = dot(
+        frontColor.rgb,
+        vec3(0.2126, 0.7152, 0.0722)
+      );
+      vec3 splitTint = luminance * (
+        isTarget
+          ? vec3(0.12, 0.82, 1.35)
+          : vec3(1.35, 0.12, 0.58)
+      );
+      blendColor = mix(
+        blendColor,
+        splitTint,
+        splitAmount
+      );
+    }
+    crossfadeColor += crossfadeWeight
+      * blendColor
+      * frontColor.a
+      * coverage;
+    crossfadeOpacity += crossfadeWeight * frontColor.a * coverage;
+    if (isTarget) {
+      targetColor += weight * frontColor.rgb * frontColor.a * coverage;
+      targetOpacity += weight * frontColor.a * coverage;
+    } else {
+      sourceColor += weight * frontColor.rgb * frontColor.a * coverage;
+      sourceOpacity += weight * frontColor.a * coverage;
+    }
   }
 
-  float transitionAmount = clamp((1.0 - maxWeight) * 2.0, 0.0, 1.0);
-  float coverageFeather = mix(
-    0.008,
-    0.085,
-    transitionAmount
-  );
   float ditheredField = smoothstep(
-    fieldThreshold - coverageFeather,
-    fieldThreshold + coverageFeather,
+    threshold - coverageFeather,
+    threshold + coverageFeather,
     fieldShape
   ) * fieldMask;
 
@@ -327,6 +460,24 @@ void main() {
   vec3 background = u_colorBack.rgb * u_colorBack.a;
   float foregroundOpacity = frontAlpha * ditheredField;
   vec3 color = foreground * ditheredField;
+  if (u_transitionStyle > 0.5) {
+    color = crossfadeColor;
+    foregroundOpacity = min(crossfadeOpacity, 1.0);
+  }
+  if (u_transitionStyle > 8.5 && u_transitionStyle < 9.5) {
+    float overlap = min(sourceOpacity, targetOpacity);
+    float cancellation = smoothstep(0.0, 0.42, overlap);
+    color = mix(
+      sourceColor + targetColor,
+      abs(targetColor - sourceColor),
+      0.82 * cancellation
+    );
+    foregroundOpacity = clamp(
+      abs(targetOpacity - sourceOpacity) + overlap * 0.38,
+      0.0,
+      1.0
+    );
+  }
   color += background * (1.0 - foregroundOpacity);
   float opacity = foregroundOpacity
     + u_colorBack.a * (1.0 - foregroundOpacity);

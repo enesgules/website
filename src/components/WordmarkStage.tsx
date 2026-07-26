@@ -22,11 +22,18 @@ type Project = {
   dither: Exclude<DitherVariant, "idle">;
 };
 
+export type TextBackdrop =
+  | "none"
+  | "text-halo"
+  | "section-haze"
+  | "soft-column"
+  | "blurred-veil";
+
 const projects: ReadonlyArray<Project> = [
   {
     name: "Context7",
     description:
-      "Up-to-date, version-specific library docs and code examples for AI coding tools.",
+      "Up-to-date, version-specific library docs and code examples for AI agents.",
     href: "https://context7.com",
     dither: "context7",
   },
@@ -256,13 +263,23 @@ function SocialFooter() {
   );
 }
 
-export function WordmarkStage() {
+type WordmarkStageProps = {
+  textBackdrop?: TextBackdrop;
+};
+
+export function WordmarkStage({
+  textBackdrop = "section-haze",
+}: WordmarkStageProps) {
   const [ditherVariant, setDitherVariant] =
     useState<DitherVariant>("idle");
   const { cycleTheme, theme } = useTheme();
 
   return (
-    <main className="profile" aria-labelledby="page-title">
+    <main
+      className="profile"
+      data-text-backdrop={textBackdrop}
+      aria-labelledby="page-title"
+    >
       <DitherBackdrop
         theme={theme}
         variant={ditherVariant}
@@ -311,13 +328,11 @@ export function WordmarkStage() {
               >
                 Upstash
               </ExternalFaviconLink>
-              . It gives AI coding tools up-to-date, version-specific library docs
-              and code examples. The open-source project has{" "}
+              . It gives AI agents up-to-date, version-specific library docs
+              and code examples. I was the first engineer at Context7 and
+              helped build it from the ground up. Today, I’m still one of its
+              core contributors. The open-source repo has{" "}
               <Context7StarCount />.
-            </p>
-            <p>
-              I also make open-source tools and interactive lessons about
-              software.
             </p>
           </div>
         </section>
