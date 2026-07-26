@@ -28,7 +28,7 @@ export function PageControl({ children, label, ...props }: PageControlProps) {
           {children}
         </span>
       </TooltipTrigger>
-      <TooltipContent>{label}</TooltipContent>
+      <TooltipContent side="bottom">{label}</TooltipContent>
     </Tooltip>
   );
 }
