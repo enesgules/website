@@ -321,7 +321,7 @@ export function WordmarkStage({
               <ExternalFaviconLink
                 href="https://upstash.com"
                 faviconSrc="/brand/upstash-icon-dark.svg"
-                iconBackground="#000"
+                iconBackground="#0A0A0A"
               >
                 Upstash
               </ExternalFaviconLink>
