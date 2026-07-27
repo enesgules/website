@@ -320,11 +320,8 @@ export function WordmarkStage({
               at{" "}
               <ExternalFaviconLink
                 href="https://upstash.com"
-                faviconSrc={
-                  theme === "dark"
-                    ? "/brand/upstash-icon-dark.svg"
-                    : "/brand/upstash-icon-light.svg"
-                }
+                faviconSrc="/brand/upstash-icon-dark.svg"
+                iconBackground="#000"
               >
                 Upstash
               </ExternalFaviconLink>

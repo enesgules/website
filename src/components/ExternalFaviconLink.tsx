@@ -1,16 +1,22 @@
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 
 type ExternalFaviconLinkProps = {
   children: ReactNode;
   faviconSrc: string;
   href: string;
+  iconBackground?: string;
 };
 
 export function ExternalFaviconLink({
   children,
   faviconSrc,
   href,
+  iconBackground,
 }: ExternalFaviconLinkProps) {
+  const imageStyle = iconBackground
+    ? ({ "--favicon-image-bg": iconBackground } as CSSProperties)
+    : undefined;
+
   return (
     <a
       className="inline-favicon-link"
@@ -29,6 +35,7 @@ export function ExternalFaviconLink({
           alt=""
           width="16"
           height="16"
+          style={imageStyle}
         />
       </span>
     </a>

@@ -270,6 +270,7 @@ canvas {
   height: 1rem;
   border-radius: 0.25rem;
   object-fit: contain;
+  background: var(--favicon-image-bg, transparent);
 }
 
 .inline-favicon-link:focus-visible .inline-favicon-link__icon {
