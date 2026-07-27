@@ -96,7 +96,7 @@ const ditherPresets = {
     mask: [0.72, 0.26, 0.9],
     shape: "ripple",
     size: 1.7,
-    scale: 0.55,
+    scale: 0.9,
     speed: 0.2,
     rotation: 0,
     offsetX: 0.3,

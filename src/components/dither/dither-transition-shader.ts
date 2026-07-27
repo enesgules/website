@@ -165,10 +165,9 @@ float evaluateShape(vec2 shapeUv, float shapeType, float t) {
 
   if (shapeType < 5.5) {
     float distanceFromCenter = length(shapeUv);
-    float ripple = 0.5 + 0.5 * sin(
+    return 0.5 + 0.5 * sin(
       pow(distanceFromCenter, 1.7) * 7.0 - 3.0 * t
     );
-    return smoothstep(0.02, 0.48, ripple);
   }
 
   if (shapeType < 6.5) {
