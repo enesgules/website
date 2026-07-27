@@ -5,6 +5,7 @@ type ExternalFaviconLinkProps = {
   faviconSrc: string;
   href: string;
   iconBackground?: string;
+  iconPadding?: number;
 };
 
 export function ExternalFaviconLink({
@@ -12,9 +13,13 @@ export function ExternalFaviconLink({
   faviconSrc,
   href,
   iconBackground,
+  iconPadding,
 }: ExternalFaviconLinkProps) {
-  const imageStyle = iconBackground
-    ? ({ "--favicon-image-bg": iconBackground } as CSSProperties)
+  const imageStyle = iconBackground || iconPadding
+    ? ({
+        "--favicon-image-bg": iconBackground,
+        padding: iconPadding,
+      } as CSSProperties)
     : undefined;
 
   return (
