@@ -1,4 +1,4 @@
-import { lazy, Suspense, useState } from "react";
+import { type CSSProperties, lazy, Suspense, useState } from "react";
 import type { ColorTheme } from "../../theme/useTheme";
 import "./dither.css";
 
@@ -10,8 +10,13 @@ export type DitherVariant =
   | "dkt";
 
 type DitherBackdropProps = {
+  idleColor?: string;
   theme: ColorTheme;
   variant: DitherVariant;
+};
+
+type DitherFallbackStyle = CSSProperties & {
+  "--dither-idle-color"?: string;
 };
 
 const DitherShader = lazy(() =>
@@ -34,17 +39,26 @@ function canUseWebGl() {
   return context !== null;
 }
 
-function DitherFallback({ variant }: Pick<DitherBackdropProps, "variant">) {
+function DitherFallback({
+  idleColor,
+  variant,
+}: Pick<DitherBackdropProps, "idleColor" | "variant">) {
+  const style: DitherFallbackStyle = {
+    "--dither-idle-color": variant === "idle" ? idleColor : undefined,
+  };
+
   return (
     <div
       className="dither-field dither-field--fallback"
       data-variant={variant}
+      style={style}
       aria-hidden="true"
     />
   );
 }
 
 export function DitherBackdrop({
+  idleColor,
   theme,
   variant,
 }: DitherBackdropProps) {
@@ -57,17 +71,18 @@ export function DitherBackdrop({
     >
       <Suspense
         fallback={
-          <DitherFallback variant={variant} />
+          <DitherFallback idleColor={idleColor} variant={variant} />
         }
       >
         {canRenderShader ? (
           <DitherShader
+            idleColor={idleColor}
             theme={theme}
             transition="crossfade"
             variant={variant}
           />
         ) : (
-          <DitherFallback variant={variant} />
+          <DitherFallback idleColor={idleColor} variant={variant} />
         )}
       </Suspense>
     </div>

@@ -165,9 +165,10 @@ float evaluateShape(vec2 shapeUv, float shapeType, float t) {
 
   if (shapeType < 5.5) {
     float distanceFromCenter = length(shapeUv);
-    return 0.5 + 0.5 * sin(
+    float ripple = 0.5 + 0.5 * sin(
       pow(distanceFromCenter, 1.7) * 7.0 - 3.0 * t
     );
+    return smoothstep(0.02, 0.48, ripple);
   }
 
   if (shapeType < 6.5) {
@@ -194,6 +195,146 @@ float getDitherThreshold(vec2 pixelUv) {
   vec2 cell = floor(pixelUv);
   return fract(
     cell.x * 0.754877666 + cell.y * 0.569840296
+  );
+}
+
+float roundedBoxDistance(vec2 point, vec2 halfSize, float radius) {
+  vec2 edge = abs(point) - halfSize + radius;
+  return length(max(edge, 0.0))
+    + min(max(edge.x, edge.y), 0.0)
+    - radius;
+}
+
+float getCardField(
+  vec2 screenUv,
+  vec2 center,
+  vec2 halfSize,
+  float radius,
+  float rotation,
+  float softness
+) {
+  vec2 point = screenUv - center;
+  point.x *= u_resolution.x / u_resolution.y;
+  point = rotateUv(point, rotation);
+  float distanceToEdge = roundedBoxDistance(
+    point,
+    halfSize,
+    radius
+  );
+  return 1.0 - smoothstep(
+    -softness,
+    softness * 0.4,
+    distanceToEdge
+  );
+}
+
+float getDktFieldShape(
+  vec2 screenUv,
+  float fieldStyle,
+  float fallbackShape,
+  float t
+) {
+  if (fieldStyle < 0.5) {
+    return fallbackShape;
+  }
+
+  float paperGrain = 0.035 * snoise(screenUv * 4.0 + t * 0.08);
+
+  if (fieldStyle < 1.5) {
+    vec2 singleCenter = vec2(0.34, 0.68) + vec2(
+      0.022 * sin(t * 1.7),
+      0.016 * cos(t * 1.35)
+    );
+    float singleCard = getCardField(
+      screenUv,
+      singleCenter,
+      vec2(0.31, 0.285),
+      0.13,
+      -5.0 + 2.4 * sin(t * 0.92),
+      0.18
+    );
+    return clamp(singleCard + paperGrain, 0.0, 1.0);
+  }
+
+  if (fieldStyle < 2.5) {
+    vec2 backCenter = vec2(0.28, 0.66) + vec2(
+      0.032 * sin(t * 1.55),
+      0.02 * cos(t * 1.18)
+    );
+    vec2 frontCenter = vec2(0.43, 0.7) + vec2(
+      0.028 * cos(t * 1.34 + 1.1),
+      0.022 * sin(t * 1.62 + 0.4)
+    );
+    float backCard = 0.88 * getCardField(
+      screenUv,
+      backCenter,
+      vec2(0.25, 0.275),
+      0.12,
+      -11.0 + 3.2 * sin(t * 0.86),
+      0.18
+    );
+    float frontCard = getCardField(
+      screenUv,
+      frontCenter,
+      vec2(0.255, 0.285),
+      0.125,
+      4.0 + 3.0 * cos(t * 0.78 + 0.6),
+      0.18
+    );
+    return clamp(max(backCard, frontCard) + paperGrain, 0.0, 1.0);
+  }
+
+  vec2 topLeftCenter = vec2(0.08, 0.18) + vec2(
+    0.018 * sin(t * 1.31 + 0.3) + 0.008 * sin(t * 2.17 + 1.4),
+    0.016 * cos(t * 1.07 + 0.9) + 0.007 * sin(t * 1.83)
+  );
+  vec2 midRightCenter = vec2(0.91, 0.52) + vec2(
+    0.022 * cos(t * 1.43 + 2.1) + 0.007 * sin(t * 2.03),
+    0.018 * sin(t * 1.19 + 1.2) + 0.006 * cos(t * 1.77)
+  );
+  vec2 bottomLeftCenter = vec2(0.16, 0.87) + vec2(
+    0.02 * sin(t * 1.57 + 2.6) + 0.006 * cos(t * 2.21),
+    0.016 * cos(t * 1.29 + 0.4) + 0.006 * sin(t * 1.91)
+  );
+  float topLeftCard = 0.86 * getCardField(
+    screenUv,
+    topLeftCenter,
+    vec2(0.13, 0.17),
+    0.07,
+    -4.0 + 1.8 * sin(t * 0.74 + 0.5),
+    0.042
+  );
+  float midRightCard = getCardField(
+    screenUv,
+    midRightCenter,
+    vec2(0.15, 0.19),
+    0.078,
+    3.0 + 1.8 * cos(t * 0.82),
+    0.048
+  );
+  float bottomLeftCard = 0.82 * getCardField(
+    screenUv,
+    bottomLeftCenter,
+    vec2(0.14, 0.17),
+    0.07,
+    5.0 + 1.7 * sin(t * 0.9 + 1.2),
+    0.044
+  );
+  float broadFlow = 0.5 + 0.5 * snoise(
+    screenUv * 7.0 + vec2(t * 2.0, -t * 1.45)
+  );
+  float fineFlow = 0.5 + 0.5 * snoise(
+    screenUv * 14.0 + vec2(-t * 2.7, t * 1.9) + vec2(8.0, 3.0)
+  );
+  float internalFlow = 0.85 + 0.1 * broadFlow + 0.05 * fineFlow;
+  float cardCluster = max(
+    topLeftCard,
+    max(midRightCard, bottomLeftCard)
+  );
+  return clamp(
+    cardCluster * internalFlow + 0.12 * paperGrain,
+    0.0,
+    1.0
   );
 }
 
@@ -394,10 +535,17 @@ void main() {
       motion.x,
       u_offsets[i]
     );
+    float shapeTime = 0.5 * u_time * motion.y;
     float shape = evaluateShape(
       shapeUv,
       params.x,
-      0.5 * u_time * motion.y
+      shapeTime
+    );
+    shape = getDktFieldShape(
+      sampleScreenUv,
+      params.w,
+      shape,
+      shapeTime
     );
     float mask = getFieldMask(sampleScreenUv, u_masks[i]);
     float coverage = smoothstep(

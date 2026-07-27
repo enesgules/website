@@ -11,6 +11,10 @@
   color: var(--ink);
 }
 
+.scrim-lab-page {
+  min-height: 100vh;
+}
+
 .scrim-lab__header {
   display: flex;
   min-height: 2.75rem;
@@ -26,7 +30,11 @@
 
 .scrim-lab__header span,
 .scrim-lab__header a,
-.scrim-lab__options span {
+.scrim-lab__options span,
+.scrim-lab__tuning-header span,
+.scrim-lab__tuning-header button,
+.scrim-lab__sliders label > span,
+.scrim-lab__color > span {
   font-size: 0.75rem;
   font-weight: 600;
 }
@@ -69,47 +77,96 @@
   background: rgb(var(--ink-rgb) / 5%);
 }
 
-.profile[data-text-backdrop="text-halo"] :is(
-    .profile__identity,
-    .profile-section,
-    .profile-footer
-  ) {
-  text-shadow:
-    0 0 6px var(--paper),
-    0 0 14px var(--paper);
+.scrim-lab__tuning {
+  margin-top: 0.65rem;
+  padding: 0.65rem 0.45rem 0.2rem;
+  border-top: 1px solid var(--control-divider);
 }
 
-.profile[data-text-backdrop="soft-column"] .profile__shell::before,
-.profile[data-text-backdrop="blurred-veil"] .profile__shell::before {
-  position: absolute;
-  z-index: -1;
-  inset: 1.5rem -4rem 1rem;
-  content: "";
-  pointer-events: none;
+.scrim-lab__tuning-header {
+  display: flex;
+  min-height: 2.5rem;
+  align-items: center;
+  justify-content: space-between;
 }
 
-.profile[data-text-backdrop="soft-column"] .profile__shell::before {
-  background: linear-gradient(
-    90deg,
-    transparent,
-    rgb(var(--paper-rgb) / 44%) 18%,
-    rgb(var(--paper-rgb) / 64%) 50%,
-    rgb(var(--paper-rgb) / 44%) 82%,
-    transparent
-  );
-  filter: blur(8px);
+.scrim-lab__tuning-header button {
+  min-width: 2.75rem;
+  min-height: 2.5rem;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--ink-muted);
+  cursor: pointer;
+  transition: transform 150ms var(--ease-out);
 }
 
-.profile[data-text-backdrop="blurred-veil"] .profile__shell::before {
-  border-radius: 2rem;
-  background: rgb(var(--paper-rgb) / 12%);
-  backdrop-filter: blur(2.5px);
-  mask-image: linear-gradient(
-    transparent,
-    black 8%,
-    black 92%,
-    transparent
-  );
+.scrim-lab__tuning-header button:active {
+  transform: scale(0.96);
+}
+
+.scrim-lab__sliders {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.65rem 0.85rem;
+}
+
+.scrim-lab__sliders label {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.scrim-lab__sliders label > span {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.scrim-lab__sliders output {
+  color: var(--ink-muted);
+  font-size: 0.6875rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 400;
+}
+
+.scrim-lab__color {
+  display: flex;
+  min-height: 3rem;
+  margin-top: 0.55rem;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.scrim-lab__color > span {
+  display: grid;
+  gap: 0.1rem;
+}
+
+.scrim-lab__color output {
+  color: var(--ink-muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.6875rem;
+  font-weight: 400;
+}
+
+.scrim-lab__color input {
+  width: 2.5rem;
+  height: 2.5rem;
+  padding: 0.2rem;
+  border: 1px solid var(--control-divider);
+  border-radius: 0.55rem;
+  background: transparent;
+  cursor: pointer;
+}
+
+.scrim-lab__sliders input {
+  width: 100%;
+  height: 2.5rem;
+  margin: 0;
+  accent-color: var(--ink);
+  cursor: pointer;
 }
 
 .scrim-lab :focus-visible {
@@ -127,9 +184,8 @@
     grid-template-columns: 1fr;
   }
 
-  .profile[data-text-backdrop="soft-column"] .profile__shell::before,
-  .profile[data-text-backdrop="blurred-veil"] .profile__shell::before {
-    inset-inline: -1rem;
+  .scrim-lab__sliders {
+    grid-template-columns: 1fr;
   }
 }
 

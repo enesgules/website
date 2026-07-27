@@ -13,6 +13,12 @@ const ScrimLab = lazy(() =>
   })),
 );
 
+const DktDitherLab = lazy(() =>
+  import("./components/dkt-dither-lab/DktDitherLab").then((module) => ({
+    default: module.DktDitherLab,
+  })),
+);
+
 export function App() {
   if (window.location.pathname === "/dither-lab") {
     return (
@@ -26,6 +32,14 @@ export function App() {
     return (
       <Suspense fallback={null}>
         <ScrimLab />
+      </Suspense>
+    );
+  }
+
+  if (window.location.pathname === "/dkt-dither-lab") {
+    return (
+      <Suspense fallback={null}>
+        <DktDitherLab />
       </Suspense>
     );
   }

@@ -122,6 +122,55 @@ canvas {
   pointer-events: none;
 }
 
+.profile[data-text-backdrop="section-even"] :is(
+    .profile__header,
+    .profile-section,
+    .profile-footer
+  ) {
+  position: relative;
+  isolation: isolate;
+}
+
+.profile[data-text-backdrop="section-even"] :is(
+    .profile__header,
+    .profile-section,
+    .profile-footer
+  )::before {
+  position: absolute;
+  z-index: -1;
+  inset: -3.5rem -5rem;
+  --even-mask: radial-gradient(
+    ellipse var(--even-width, 100%) var(--even-height, 72%) at center,
+    rgb(0 0 0 / var(--even-alpha-0, 36%)) 0%,
+    rgb(0 0 0 / var(--even-alpha-1, 32%))
+      var(--even-stop-1, 10%),
+    rgb(0 0 0 / var(--even-alpha-2, 23%))
+      var(--even-stop-2, 41%),
+    rgb(0 0 0 / var(--even-alpha-3, 12%))
+      var(--even-stop-3, 63%),
+    rgb(0 0 0 / var(--even-alpha-4, 4%))
+      var(--even-stop-4, 81%),
+    transparent 100%
+  );
+  background: rgb(var(--paper-rgb) / 24%);
+  mask-image: var(--even-mask);
+  content: "";
+  opacity: 1;
+  pointer-events: none;
+  transition: opacity 180ms ease;
+  -webkit-mask-image: var(--even-mask);
+}
+
+.profile[data-text-backdrop="section-even"]:not(
+    [data-dither-variant="idle"]
+  ) :is(
+    .profile__header,
+    .profile-section,
+    .profile-footer
+  )::before {
+  opacity: 0;
+}
+
 .profile__header h1,
 .profile__header p,
 .profile-section h2,

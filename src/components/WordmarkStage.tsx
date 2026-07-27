@@ -24,10 +24,8 @@ type Project = {
 
 export type TextBackdrop =
   | "none"
-  | "text-halo"
   | "section-haze"
-  | "soft-column"
-  | "blurred-veil";
+  | "section-even";
 
 const projects: ReadonlyArray<Project> = [
   {
@@ -264,11 +262,13 @@ function SocialFooter() {
 }
 
 type WordmarkStageProps = {
+  idleDitherColor?: string;
   textBackdrop?: TextBackdrop;
 };
 
 export function WordmarkStage({
-  textBackdrop = "section-haze",
+  idleDitherColor,
+  textBackdrop = "section-even",
 }: WordmarkStageProps) {
   const [ditherVariant, setDitherVariant] =
     useState<DitherVariant>("idle");
@@ -277,10 +277,12 @@ export function WordmarkStage({
   return (
     <main
       className="profile"
+      data-dither-variant={ditherVariant}
       data-text-backdrop={textBackdrop}
       aria-labelledby="page-title"
     >
       <DitherBackdrop
+        idleColor={idleDitherColor}
         theme={theme}
         variant={ditherVariant}
       />

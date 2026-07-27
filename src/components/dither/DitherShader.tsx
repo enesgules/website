@@ -22,6 +22,28 @@ type DitherPreset = {
   speed: number;
 };
 
+export type DktFieldStyle =
+  | "wave"
+  | "single-card"
+  | "offset-pair"
+  | "card-cluster";
+
+type DitherPresetOptions = {
+  dktFieldStyle?: DktFieldStyle;
+  idleColor?: string;
+};
+
+const dktFieldStyleValues = {
+  wave: 0,
+  "single-card": 1,
+  "offset-pair": 2,
+  "card-cluster": 3,
+} satisfies Record<DktFieldStyle, number>;
+
+const homepagePresetOptions = {
+  dktFieldStyle: "card-cluster",
+} satisfies DitherPresetOptions;
+
 export type DitherTransition =
   | "morph"
   | "crossfade"
@@ -54,8 +76,8 @@ const ditherTransitionValues = {
 const ditherPresets = {
   idle: {
     colorFront: {
-      light: "#49566e",
-      dark: "#75839d",
+      light: "#87909a",
+      dark: "#a8afb8",
     },
     mask: [0.64, 0.2, 0.92],
     shape: "simplex",
@@ -74,8 +96,8 @@ const ditherPresets = {
     mask: [0.72, 0.26, 0.9],
     shape: "ripple",
     size: 1.7,
-    scale: 0.9,
-    speed: 0.24,
+    scale: 0.55,
+    speed: 0.2,
     rotation: 0,
     offsetX: 0.3,
     offsetY: -0.24,
@@ -89,7 +111,7 @@ const ditherPresets = {
     shape: "dots",
     size: 2.2,
     scale: 1.2,
-    speed: 0.42,
+    speed: 0.32,
     rotation: 12,
     offsetX: -0.42,
     offsetY: 0,
@@ -117,7 +139,7 @@ const ditherPresets = {
     shape: "wave",
     size: 1.75,
     scale: 0.84,
-    speed: 0.69,
+    speed: 0.82,
     rotation: -8,
     offsetX: -0.3,
     offsetY: 0.36,
@@ -177,6 +199,7 @@ function useShaderPreferences() {
 }
 
 type DitherShaderProps = {
+  idleColor?: string;
   theme: ColorTheme;
   transition?: DitherTransition;
   variant: DitherVariant;
@@ -195,11 +218,16 @@ export type VariantWeights = [number, number, number, number, number];
 function getShaderPreset(
   variant: DitherVariant,
   theme: ColorTheme,
+  options: DitherPresetOptions,
 ) {
   const preset = ditherPresets[variant];
 
   return {
-    color: getShaderColorFromString(preset.colorFront[theme]),
+    color: getShaderColorFromString(
+      variant === "idle" && options.idleColor
+        ? options.idleColor
+        : preset.colorFront[theme],
+    ),
     mask: preset.mask,
     offset: [preset.offsetX, preset.offsetY],
     pxSize: preset.size,
@@ -252,9 +280,10 @@ export function getSpatialTransitionUniforms({
 export function getPresetUniforms(
   theme: ColorTheme,
   transition: DitherTransition,
+  options: DitherPresetOptions = {},
 ) {
   const presets = ditherVariants.map((variant) =>
-    getShaderPreset(variant, theme),
+    getShaderPreset(variant, theme, options),
   );
 
   return {
@@ -270,11 +299,13 @@ export function getPresetUniforms(
       preset.speed,
     ]),
     "u_offsets[0]": presets.map((preset) => preset.offset),
-    "u_params[0]": presets.map((preset) => [
+    "u_params[0]": presets.map((preset, index) => [
       preset.shape,
       preset.pxSize,
       preset.scale,
-      0,
+      index === 4
+        ? dktFieldStyleValues[options.dktFieldStyle ?? "wave"]
+        : 0,
     ]),
   };
 }
@@ -285,6 +316,7 @@ const springPositionTolerance = 0.0005;
 const springVelocityTolerance = 0.005;
 
 export function DitherShader({
+  idleColor,
   theme,
   transition = "crossfade",
   variant,
@@ -299,7 +331,10 @@ export function DitherShader({
     getVariantWeights(variant),
   );
   const [initialUniforms] = useState(() => ({
-    ...getPresetUniforms(theme, transition),
+    ...getPresetUniforms(theme, transition, {
+      ...homepagePresetOptions,
+      idleColor,
+    }),
     ...getWeightUniforms(getVariantWeights(variant)),
   }));
   const shouldAnimate =
@@ -312,8 +347,13 @@ export function DitherShader({
       return;
     }
 
-    shaderMount.setUniforms(getPresetUniforms(theme, transition));
-  }, [theme, transition]);
+    shaderMount.setUniforms(
+      getPresetUniforms(theme, transition, {
+        ...homepagePresetOptions,
+        idleColor,
+      }),
+    );
+  }, [idleColor, theme, transition]);
 
   useEffect(() => {
     const shaderMount = shaderElementRef.current?.paperShaderMount;

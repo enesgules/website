@@ -12,6 +12,10 @@
   opacity: var(--dither-active-opacity);
 }
 
+.dither-backdrop[data-variant="context7"] {
+  --dither-active-opacity: 0.82;
+}
+
 .dither-field {
   position: absolute;
   inset: 0;
@@ -76,7 +80,7 @@
 .dither-field--fallback::before {
   background-image: radial-gradient(
     circle,
-    rgb(var(--ink-rgb) / 44%) 0 0.75px,
+    var(--dither-idle-color, rgb(var(--ink-rgb) / 44%)) 0 0.75px,
     transparent 1px
   );
   background-position: center;
