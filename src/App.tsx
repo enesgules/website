@@ -44,5 +44,5 @@ export function App() {
     );
   }
 
-  return <WordmarkStage />;
+  return <WordmarkStage quietDither textBackdrop="none" />;
 }

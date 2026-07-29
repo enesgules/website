@@ -16,6 +16,23 @@
   --dither-active-opacity: 0.82;
 }
 
+.profile[data-quiet-dither="true"] .dither-backdrop {
+  --quiet-field-mask: linear-gradient(
+    to right,
+    black 0%,
+    black 10%,
+    rgb(0 0 0 / 82%) 18%,
+    rgb(0 0 0 / 46%) 30%,
+    rgb(0 0 0 / 40%) 50%,
+    rgb(0 0 0 / 46%) 70%,
+    rgb(0 0 0 / 82%) 82%,
+    black 90%,
+    black 100%
+  );
+  mask-image: var(--quiet-field-mask);
+  -webkit-mask-image: var(--quiet-field-mask);
+}
+
 .dither-field {
   position: absolute;
   inset: 0;
@@ -121,6 +138,16 @@
     opacity: 0.58;
   }
 
+  .profile[data-quiet-dither="true"] .dither-backdrop {
+    --quiet-field-mask: linear-gradient(
+      to right,
+      rgb(0 0 0 / 64%) 0%,
+      rgb(0 0 0 / 44%) 14%,
+      rgb(0 0 0 / 40%) 50%,
+      rgb(0 0 0 / 44%) 86%,
+      rgb(0 0 0 / 64%) 100%
+    );
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -263,11 +263,13 @@ function SocialFooter() {
 
 type WordmarkStageProps = {
   idleDitherColor?: string;
+  quietDither?: boolean;
   textBackdrop?: TextBackdrop;
 };
 
 export function WordmarkStage({
   idleDitherColor,
+  quietDither = false,
   textBackdrop = "section-even",
 }: WordmarkStageProps) {
   const [ditherVariant, setDitherVariant] =
@@ -278,6 +280,7 @@ export function WordmarkStage({
     <main
       className="profile"
       data-dither-variant={ditherVariant}
+      data-quiet-dither={quietDither || undefined}
       data-text-backdrop={textBackdrop}
       aria-labelledby="page-title"
     >
