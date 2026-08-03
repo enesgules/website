@@ -1,4 +1,5 @@
 import {
+  ComponentIcon,
   GithubIcon,
   Linkedin01Icon,
   Mail01Icon,
@@ -7,6 +8,7 @@ import {
 import { HugeiconsIcon } from "@hugeicons/react";
 import type { IconSvgElement } from "@hugeicons/react";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { projects } from "../data/projects";
 import { useTheme } from "../theme/useTheme";
 import {
   DitherBackdrop,
@@ -15,48 +17,10 @@ import {
 import { ExternalFaviconLink } from "./ExternalFaviconLink";
 import { PageControls } from "./PageControls";
 
-type Project = {
-  name: string;
-  description: string;
-  href: string;
-  dither: Exclude<DitherVariant, "idle">;
-};
-
 export type TextBackdrop =
   | "none"
   | "section-haze"
   | "section-even";
-
-const projects: ReadonlyArray<Project> = [
-  {
-    name: "Context7",
-    description:
-      "Up-to-date, version-specific library docs and code examples for AI agents.",
-    href: "https://context7.com",
-    dither: "context7",
-  },
-  {
-    name: "Hugeicons Animated",
-    description:
-      "A collection of hand-animated React icons you can install and edit.",
-    href: "https://hugeicons-animated.com",
-    dither: "hugeicons",
-  },
-  {
-    name: "Distributed Concepts",
-    description:
-      "Explore distributed database behavior through an interactive 3D globe.",
-    href: "https://distributedconcepts.com",
-    dither: "distributed",
-  },
-  {
-    name: "DKT Materyal",
-    description:
-      "Generate printable materials with AI for Turkish speech therapists.",
-    href: "https://dktmateryal.com",
-    dither: "dkt",
-  },
-];
 
 const context7RepositoryUrl = "https://github.com/upstash/context7";
 const context7RepositoryApiUrl =
@@ -311,7 +275,10 @@ export function WordmarkStage({
           />
         </header>
 
-        <section className="profile-section profile-section--today">
+        <section
+          className="profile-section profile-section--today"
+          id="now"
+        >
           <h2>Now</h2>
           <div className="profile-section__body">
             <p>
@@ -340,7 +307,11 @@ export function WordmarkStage({
           </div>
         </section>
 
-        <section className="profile-section" aria-labelledby="projects-title">
+        <section
+          className="profile-section"
+          id="projects"
+          aria-labelledby="projects-title"
+        >
           <h2 id="projects-title">Projects</h2>
 
           <div
@@ -366,6 +337,29 @@ export function WordmarkStage({
                 </span>
               </a>
             ))}
+          </div>
+        </section>
+
+        <section className="profile-section" aria-labelledby="components-title">
+          <h2 id="components-title">Components</h2>
+          <div className="profile-section__body">
+            <p>
+              I keep the small interface pieces I build in one place.{" "}
+              <a className="inline-favicon-link" href="/components">
+                Browse components
+                <span
+                  className="link-icon-tile inline-favicon-link__icon"
+                  aria-hidden="true"
+                >
+                  <HugeiconsIcon
+                    icon={ComponentIcon}
+                    size={15}
+                    strokeWidth={1.7}
+                  />
+                </span>
+              </a>
+              .
+            </p>
           </div>
         </section>
 

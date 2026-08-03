@@ -1,6 +1,12 @@
 import { lazy, Suspense } from "react";
 import { WordmarkStage } from "./components/WordmarkStage";
 
+const ComponentsPage = lazy(() =>
+  import("./components/components-page/ComponentsPage").then((module) => ({
+    default: module.ComponentsPage,
+  })),
+);
+
 const DitherLab = lazy(() =>
   import("./components/dither-lab/DitherLab").then((module) => ({
     default: module.DitherLab,
@@ -20,6 +26,14 @@ const DktDitherLab = lazy(() =>
 );
 
 export function App() {
+  if (window.location.pathname === "/components") {
+    return (
+      <Suspense fallback={null}>
+        <ComponentsPage />
+      </Suspense>
+    );
+  }
+
   if (window.location.pathname === "/dither-lab") {
     return (
       <Suspense fallback={null}>

@@ -292,10 +292,10 @@ canvas {
 
 .link-icon-tile {
   display: inline-flex;
-  width: 1.5rem;
-  height: 1.5rem;
+  width: var(--link-icon-tile-size, 1.5rem);
+  height: var(--link-icon-tile-size, 1.5rem);
   border: 1px solid var(--icon-tile-border);
-  border-radius: 0.45rem;
+  border-radius: var(--link-icon-tile-radius, 0.45rem);
   align-items: center;
   justify-content: center;
   background: var(--icon-tile-surface);
@@ -320,8 +320,8 @@ canvas {
 
 .inline-favicon-link__image {
   display: block;
-  width: 1rem;
-  height: 1rem;
+  width: var(--link-icon-image-size, 1rem);
+  height: var(--link-icon-image-size, 1rem);
   border-radius: 0.25rem;
   object-fit: contain;
   background: var(--favicon-image-bg, transparent);
