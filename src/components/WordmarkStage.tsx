@@ -7,7 +7,13 @@ import {
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import type { IconSvgElement } from "@hugeicons/react";
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type MouseEventHandler,
+} from "react";
 import { projects } from "../data/projects";
 import { useTheme } from "../theme/useTheme";
 import {
@@ -231,6 +237,135 @@ type WordmarkStageProps = {
   textBackdrop?: TextBackdrop;
 };
 
+type WordmarkContentProps = {
+  onComponentsIntent?: () => void;
+  onDitherVariantChange: (variant: DitherVariant) => void;
+  onNavigate?: MouseEventHandler<HTMLAnchorElement>;
+};
+
+export function WordmarkContent({
+  onComponentsIntent,
+  onDitherVariantChange,
+  onNavigate,
+}: WordmarkContentProps) {
+  return (
+    <div className="profile__shell">
+      <header className="profile__header">
+        <div className="profile__identity">
+          <h1 id="page-title">Abdullah Enes Gules</h1>
+          <p>Software Engineer</p>
+        </div>
+        <img
+          className="profile__avatar"
+          src="/profile.jpg"
+          alt=""
+          width="44"
+          height="44"
+          aria-hidden="true"
+        />
+      </header>
+
+      <section
+        className="profile-section profile-section--today"
+        id="now"
+      >
+        <h2>Now</h2>
+        <div className="profile-section__body">
+          <p>
+            I build{" "}
+            <ExternalFaviconLink
+              href="https://context7.com"
+              faviconSrc="/brand/context7.png"
+            >
+              Context7
+            </ExternalFaviconLink>{" "}
+            at{" "}
+            <ExternalFaviconLink
+              href="https://upstash.com"
+              faviconSrc="/brand/upstash-icon-dark.svg"
+              iconBackground="#0A0A0A"
+              iconPadding={2}
+            >
+              Upstash
+            </ExternalFaviconLink>
+            . It gives AI agents up-to-date, version-specific library docs
+            and code examples. I was the first engineer at Context7 and
+            helped build it from the ground up. Today, I’m still one of its
+            core contributors. The open-source repo has{" "}
+            <Context7StarCount />.
+          </p>
+        </div>
+      </section>
+
+      <section
+        className="profile-section"
+        id="projects"
+        aria-labelledby="projects-title"
+      >
+        <h2 id="projects-title">Projects</h2>
+
+        <div
+          className="project-list"
+          onPointerLeave={() => onDitherVariantChange("idle")}
+        >
+          {projects.map((project) => (
+            <a
+              className="project-entry"
+              data-project={project.dither}
+              href={project.href}
+              key={project.href}
+              target="_blank"
+              rel="noreferrer"
+              onPointerEnter={() =>
+                onDitherVariantChange(project.dither)
+              }
+              onPointerLeave={() => onDitherVariantChange("idle")}
+              onFocus={() => onDitherVariantChange(project.dither)}
+              onBlur={() => onDitherVariantChange("idle")}
+            >
+              <span className="project-entry__title">{project.name}</span>
+              <span className="project-entry__description">
+                {project.description}
+              </span>
+            </a>
+          ))}
+        </div>
+      </section>
+
+      <section className="profile-section" aria-labelledby="components-title">
+        <h2 id="components-title">Components</h2>
+        <div className="profile-section__body">
+          <p>
+            I keep the small interface pieces I build in one place.{" "}
+            <a
+              className="inline-favicon-link"
+              href="/components"
+              onClick={onNavigate}
+              onFocus={onComponentsIntent}
+              onPointerEnter={onComponentsIntent}
+            >
+              Browse components
+              <span
+                className="link-icon-tile inline-favicon-link__icon"
+                aria-hidden="true"
+              >
+                <HugeiconsIcon
+                  icon={ComponentIcon}
+                  size={15}
+                  strokeWidth={1.7}
+                />
+              </span>
+            </a>
+            .
+          </p>
+        </div>
+      </section>
+
+      <SocialFooter />
+    </div>
+  );
+}
+
 export function WordmarkStage({
   idleDitherColor,
   quietDither = false,
@@ -259,112 +394,7 @@ export function WordmarkStage({
         onThemeCycle={cycleTheme}
       />
 
-      <div className="profile__shell">
-        <header className="profile__header">
-          <div className="profile__identity">
-            <h1 id="page-title">Abdullah Enes Gules</h1>
-            <p>Software Engineer</p>
-          </div>
-          <img
-            className="profile__avatar"
-            src="/profile.jpg"
-            alt=""
-            width="44"
-            height="44"
-            aria-hidden="true"
-          />
-        </header>
-
-        <section
-          className="profile-section profile-section--today"
-          id="now"
-        >
-          <h2>Now</h2>
-          <div className="profile-section__body">
-            <p>
-              I build{" "}
-              <ExternalFaviconLink
-                href="https://context7.com"
-                faviconSrc="/brand/context7.png"
-              >
-                Context7
-              </ExternalFaviconLink>{" "}
-              at{" "}
-              <ExternalFaviconLink
-                href="https://upstash.com"
-                faviconSrc="/brand/upstash-icon-dark.svg"
-                iconBackground="#0A0A0A"
-                iconPadding={2}
-              >
-                Upstash
-              </ExternalFaviconLink>
-              . It gives AI agents up-to-date, version-specific library docs
-              and code examples. I was the first engineer at Context7 and
-              helped build it from the ground up. Today, I’m still one of its
-              core contributors. The open-source repo has{" "}
-              <Context7StarCount />.
-            </p>
-          </div>
-        </section>
-
-        <section
-          className="profile-section"
-          id="projects"
-          aria-labelledby="projects-title"
-        >
-          <h2 id="projects-title">Projects</h2>
-
-          <div
-            className="project-list"
-            onPointerLeave={() => setDitherVariant("idle")}
-          >
-            {projects.map((project) => (
-              <a
-                className="project-entry"
-                data-project={project.dither}
-                href={project.href}
-                key={project.href}
-                target="_blank"
-                rel="noreferrer"
-                onPointerEnter={() => setDitherVariant(project.dither)}
-                onPointerLeave={() => setDitherVariant("idle")}
-                onFocus={() => setDitherVariant(project.dither)}
-                onBlur={() => setDitherVariant("idle")}
-              >
-                <span className="project-entry__title">{project.name}</span>
-                <span className="project-entry__description">
-                  {project.description}
-                </span>
-              </a>
-            ))}
-          </div>
-        </section>
-
-        <section className="profile-section" aria-labelledby="components-title">
-          <h2 id="components-title">Components</h2>
-          <div className="profile-section__body">
-            <p>
-              I keep the small interface pieces I build in one place.{" "}
-              <a className="inline-favicon-link" href="/components">
-                Browse components
-                <span
-                  className="link-icon-tile inline-favicon-link__icon"
-                  aria-hidden="true"
-                >
-                  <HugeiconsIcon
-                    icon={ComponentIcon}
-                    size={15}
-                    strokeWidth={1.7}
-                  />
-                </span>
-              </a>
-              .
-            </p>
-          </div>
-        </section>
-
-        <SocialFooter />
-      </div>
+      <WordmarkContent onDitherVariantChange={setDitherVariant} />
     </main>
   );
 }
