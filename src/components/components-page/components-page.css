@@ -9,12 +9,9 @@
   --quick-links-shadow: 0 10px 36px -22px rgb(0 0 0 / 30%);
   --quick-links-hover: rgb(146 114 76 / 11%);
   --menu-demo-base: rgb(247 242 232);
-  --menu-demo-glow-start: rgb(205 153 103 / 24%);
-  --menu-demo-glow-end: rgb(146 114 76 / 18%);
   --favicon-demo-base: rgb(235 250 242);
-  --favicon-demo-glow-start: rgb(5 150 105 / 24%);
-  --favicon-demo-glow-end: rgb(22 166 190 / 18%);
-  --demo-dither-dot: rgb(255 255 255 / 62%);
+  --turkish-icons-demo-base: #f9e3e7;
+  --turkish-icons-demo-ink: rgb(56 31 35 / 94%);
 }
 
 .components-page__shell {
@@ -94,41 +91,23 @@
   -webkit-backdrop-filter: blur(18px);
 }
 
-.component-demo::after {
+.component-mesh-background {
   position: absolute;
   z-index: 0;
   inset: 0;
-  background-image: radial-gradient(
-    circle,
-    var(--demo-dither-dot) 0 0.7px,
-    transparent 0.8px
-  );
-  background-size: 5px 5px;
-  content: "";
-  mask-image: radial-gradient(circle at 50% 50%, black, transparent 78%);
-  opacity: 0.4;
+  overflow: hidden;
   pointer-events: none;
-  -webkit-mask-image: radial-gradient(
-    circle at 50% 50%,
-    black,
-    transparent 78%
-  );
+}
+
+.component-mesh-background__canvas,
+.component-mesh-background__canvas canvas {
+  width: 100% !important;
+  height: 100% !important;
 }
 
 .component-demo--menu {
   min-height: 30rem;
   background-color: var(--menu-demo-base);
-  background-image:
-    radial-gradient(
-      circle at 14% 18%,
-      var(--menu-demo-glow-start),
-      transparent 44%
-    ),
-    radial-gradient(
-      circle at 86% 82%,
-      var(--menu-demo-glow-end),
-      transparent 48%
-    );
 }
 
 .component-demo--favicons {
@@ -136,19 +115,75 @@
   min-height: 15rem;
   padding: 2rem;
   background-color: var(--favicon-demo-base);
-  background-image:
-    radial-gradient(
-      circle at 18% 82%,
-      var(--favicon-demo-glow-start),
-      transparent 44%
-    ),
-    radial-gradient(
-      circle at 84% 16%,
-      var(--favicon-demo-glow-end),
-      transparent 46%
-    );
   place-items: center;
   text-align: center;
+}
+
+.component-demo--turkish-icons {
+  display: grid;
+  min-height: 26rem;
+  padding: 2rem;
+  background-color: var(--turkish-icons-demo-base);
+  place-items: center;
+}
+
+.component-icon-explorations {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  width: min(100%, 32rem);
+  gap: 2.5rem;
+  color: var(--turkish-icons-demo-ink);
+}
+
+.component-icon-study {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.component-icon-study__title {
+  margin: 0;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: -0.012em;
+  line-height: 1.3;
+  text-align: center;
+}
+
+.component-icon-study__variants {
+  display: grid;
+  justify-self: center;
+  width: 100%;
+  gap: 1.5rem;
+}
+
+.component-icon-study__variants--three {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.component-icon-exploration {
+  display: flex;
+  min-width: 0;
+  margin: 0;
+  align-items: center;
+  flex-direction: column;
+  color: var(--turkish-icons-demo-ink);
+  text-align: center;
+}
+
+.component-icon-exploration__glyph {
+  width: 4.5rem;
+  height: 4.5rem;
+  flex: none;
+}
+
+.component-icon-exploration figcaption {
+  margin-top: 0.75rem;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: -0.002em;
+  line-height: 1.35;
+  opacity: 0.62;
 }
 
 .component-favicon-demo {
@@ -337,12 +372,9 @@
   --quick-links-shadow: 0 12px 40px -22px rgb(0 0 0 / 70%);
   --quick-links-hover: rgb(213 171 121 / 14%);
   --menu-demo-base: rgb(38 31 24);
-  --menu-demo-glow-start: rgb(146 92 49 / 34%);
-  --menu-demo-glow-end: rgb(126 88 60 / 28%);
   --favicon-demo-base: rgb(17 37 30);
-  --favicon-demo-glow-start: rgb(5 150 105 / 30%);
-  --favicon-demo-glow-end: rgb(17 135 154 / 26%);
-  --demo-dither-dot: rgb(255 255 255 / 16%);
+  --turkish-icons-demo-base: #e6bec8;
+  --turkish-icons-demo-ink: rgb(56 31 35 / 94%);
 }
 
 @media (hover: hover) and (pointer: fine) {
@@ -385,6 +417,28 @@
   .component-demo--favicons {
     min-height: 14rem;
     padding-inline: 1.5rem;
+  }
+
+  .component-demo--turkish-icons {
+    min-height: 24rem;
+    padding: 1.75rem 1.25rem;
+  }
+
+  .component-icon-explorations {
+    gap: 2rem;
+  }
+
+  .component-icon-study {
+    gap: 1rem;
+  }
+
+  .component-icon-study__variants {
+    gap: 0.75rem;
+  }
+
+  .component-icon-exploration__glyph {
+    width: 4rem;
+    height: 4rem;
   }
 
   .quick-links {

@@ -75,7 +75,7 @@ function ProfilePages({ onNavigate, pathname }: ProfilePagesProps) {
 
       <Suspense fallback={null}>
         {isComponentsPage ? (
-          <ComponentsPage onNavigate={onNavigate} />
+          <ComponentsPage onNavigate={onNavigate} theme={theme} />
         ) : (
           <WordmarkContent
             onComponentsIntent={() => void loadComponentsPage()}

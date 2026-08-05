@@ -2,15 +2,26 @@ import { ArrowLeft02Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { useEffect, type MouseEventHandler } from "react";
 import { projects } from "../../data/projects";
+import type { ColorTheme } from "../../theme/useTheme";
 import { ExternalFaviconLink } from "../ExternalFaviconLink";
 import { QuickLinksMenu } from "../QuickLinksMenu";
+import {
+  CayIcon,
+  CaySpoonIcon,
+  CaySugarIcon,
+  EsnafButtonedIcon,
+  EsnafIcon,
+  EsnafSmokingIcon,
+} from "../turkish-icons/TurkishIcons";
+import { ComponentMeshBackground } from "./ComponentMeshBackground";
 import "./components-page.css";
 
 type ComponentsPageProps = {
   onNavigate: MouseEventHandler<HTMLAnchorElement>;
+  theme: ColorTheme;
 };
 
-export function ComponentsPage({ onNavigate }: ComponentsPageProps) {
+export function ComponentsPage({ onNavigate, theme }: ComponentsPageProps) {
   useEffect(() => {
     const previousTitle = document.title;
     document.title = "Components · Abdullah Enes Gules";
@@ -43,25 +54,6 @@ export function ComponentsPage({ onNavigate }: ComponentsPageProps) {
       <div className="component-showcase-list">
         <section
           className="component-showcase"
-          aria-labelledby="morphing-menu-title"
-        >
-          <div className="component-showcase__meta">
-            <div>
-              <h2 id="morphing-menu-title">Morphing quick links</h2>
-            </div>
-            <p>
-              A compact link list that expands from the same surface instead
-              of opening a separate panel.
-            </p>
-          </div>
-
-          <div className="component-demo component-demo--menu">
-            <QuickLinksMenu projects={projects} />
-          </div>
-        </section>
-
-        <section
-          className="component-showcase"
           aria-labelledby="favicon-links-title"
         >
           <div className="component-showcase__meta">
@@ -75,6 +67,7 @@ export function ComponentsPage({ onNavigate }: ComponentsPageProps) {
           </div>
 
           <div className="component-demo component-demo--favicons">
+            <ComponentMeshBackground palette="favicons" theme={theme} />
             <p className="component-favicon-demo">
               I build{" "}
               <ExternalFaviconLink
@@ -96,6 +89,105 @@ export function ComponentsPage({ onNavigate }: ComponentsPageProps) {
                 .
               </span>
             </p>
+          </div>
+        </section>
+
+        <section
+          className="component-showcase"
+          aria-labelledby="turkish-icons-title"
+        >
+          <div className="component-showcase__meta">
+            <div>
+              <h2 id="turkish-icons-title">Turkish icon explorations</h2>
+            </div>
+            <p>
+              Exploring a simple outline style for familiar Turkish characters
+              and objects.
+            </p>
+          </div>
+
+          <div className="component-demo component-demo--turkish-icons">
+            <ComponentMeshBackground palette="turkish-icons" theme={theme} />
+            <div
+              className="component-icon-explorations"
+              aria-label="Turkish icon explorations"
+            >
+              <section
+                className="component-icon-study"
+                aria-labelledby="esnaf-study-title"
+              >
+                <h3
+                  className="component-icon-study__title"
+                  id="esnaf-study-title"
+                >
+                  Esnaf · Shopkeeper
+                </h3>
+                <div className="component-icon-study__variants component-icon-study__variants--three">
+                  <figure className="component-icon-exploration">
+                    <EsnafIcon className="component-icon-exploration__glyph" />
+                    <figcaption>Open vest</figcaption>
+                  </figure>
+
+                  <figure className="component-icon-exploration">
+                    <EsnafButtonedIcon className="component-icon-exploration__glyph" />
+                    <figcaption>Waistcoat</figcaption>
+                  </figure>
+
+                  <figure className="component-icon-exploration">
+                    <EsnafSmokingIcon className="component-icon-exploration__glyph" />
+                    <figcaption>Smoking</figcaption>
+                  </figure>
+                </div>
+              </section>
+
+              <section
+                className="component-icon-study"
+                aria-labelledby="cay-study-title"
+              >
+                <h3
+                  className="component-icon-study__title"
+                  id="cay-study-title"
+                >
+                  Çay · Tea
+                </h3>
+                <div className="component-icon-study__variants component-icon-study__variants--three">
+                  <figure className="component-icon-exploration">
+                    <CayIcon className="component-icon-exploration__glyph" />
+                    <figcaption>Plain</figcaption>
+                  </figure>
+
+                  <figure className="component-icon-exploration">
+                    <CaySpoonIcon className="component-icon-exploration__glyph" />
+                    <figcaption>Spoon</figcaption>
+                  </figure>
+
+                  <figure className="component-icon-exploration">
+                    <CaySugarIcon className="component-icon-exploration__glyph" />
+                    <figcaption>Sugar cubes</figcaption>
+                  </figure>
+                </div>
+              </section>
+            </div>
+          </div>
+        </section>
+
+        <section
+          className="component-showcase"
+          aria-labelledby="morphing-menu-title"
+        >
+          <div className="component-showcase__meta">
+            <div>
+              <h2 id="morphing-menu-title">Morphing quick links</h2>
+            </div>
+            <p>
+              A compact link list that expands from the same surface instead
+              of opening a separate panel.
+            </p>
+          </div>
+
+          <div className="component-demo component-demo--menu">
+            <ComponentMeshBackground palette="menu" theme={theme} />
+            <QuickLinksMenu projects={projects} />
           </div>
         </section>
       </div>
