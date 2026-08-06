@@ -1,5 +1,4 @@
 .components-page {
-  --component-demo-surface: rgb(255 255 255 / 76%);
   --component-demo-border: rgb(0 0 0 / 7%);
   --component-demo-shadow:
     0 1px 2px rgb(0 0 0 / 4%),
@@ -85,24 +84,7 @@
   overflow: hidden;
   border: 1px solid var(--component-demo-border);
   border-radius: 1.75rem;
-  background-color: var(--component-demo-surface);
   box-shadow: var(--component-demo-shadow);
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
-}
-
-.component-mesh-background {
-  position: absolute;
-  z-index: 0;
-  inset: 0;
-  overflow: hidden;
-  pointer-events: none;
-}
-
-.component-mesh-background__canvas,
-.component-mesh-background__canvas canvas {
-  width: 100% !important;
-  height: 100% !important;
 }
 
 .component-demo--menu {
@@ -364,7 +346,6 @@
 }
 
 :root[data-theme="dark"] .components-page {
-  --component-demo-surface: rgb(24 30 25 / 84%);
   --component-demo-border: rgb(255 255 255 / 8%);
   --component-demo-shadow: 0 22px 60px -42px rgb(0 0 0 / 80%);
   --quick-links-surface: rgb(28 35 29);

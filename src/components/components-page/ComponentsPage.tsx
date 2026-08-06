@@ -2,7 +2,6 @@ import { ArrowLeft02Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { useEffect, type MouseEventHandler } from "react";
 import { projects } from "../../data/projects";
-import type { ColorTheme } from "../../theme/useTheme";
 import { ExternalFaviconLink } from "../ExternalFaviconLink";
 import { QuickLinksMenu } from "../QuickLinksMenu";
 import {
@@ -13,15 +12,13 @@ import {
   EsnafIcon,
   EsnafSmokingIcon,
 } from "../turkish-icons/TurkishIcons";
-import { ComponentMeshBackground } from "./ComponentMeshBackground";
 import "./components-page.css";
 
 type ComponentsPageProps = {
   onNavigate: MouseEventHandler<HTMLAnchorElement>;
-  theme: ColorTheme;
 };
 
-export function ComponentsPage({ onNavigate, theme }: ComponentsPageProps) {
+export function ComponentsPage({ onNavigate }: ComponentsPageProps) {
   useEffect(() => {
     const previousTitle = document.title;
     document.title = "Components · Abdullah Enes Gules";
@@ -67,7 +64,6 @@ export function ComponentsPage({ onNavigate, theme }: ComponentsPageProps) {
           </div>
 
           <div className="component-demo component-demo--favicons">
-            <ComponentMeshBackground palette="favicons" theme={theme} />
             <p className="component-favicon-demo">
               I build{" "}
               <ExternalFaviconLink
@@ -107,7 +103,6 @@ export function ComponentsPage({ onNavigate, theme }: ComponentsPageProps) {
           </div>
 
           <div className="component-demo component-demo--turkish-icons">
-            <ComponentMeshBackground palette="turkish-icons" theme={theme} />
             <div
               className="component-icon-explorations"
               aria-label="Turkish icon explorations"
@@ -186,7 +181,6 @@ export function ComponentsPage({ onNavigate, theme }: ComponentsPageProps) {
           </div>
 
           <div className="component-demo component-demo--menu">
-            <ComponentMeshBackground palette="menu" theme={theme} />
             <QuickLinksMenu projects={projects} />
           </div>
         </section>
