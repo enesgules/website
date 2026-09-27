@@ -1,4 +1,9 @@
-import { type CSSProperties, lazy, Suspense, useState } from "react";
+import {
+  type CSSProperties,
+  lazy,
+  Suspense,
+  useSyncExternalStore,
+} from "react";
 import type { ColorTheme } from "../../theme/useTheme";
 import "./dither.css";
 
@@ -25,9 +30,11 @@ const DitherShader = lazy(() =>
   })),
 );
 
+let webGlSupport: boolean | undefined;
+
 function canUseWebGl() {
-  if (typeof document === "undefined") {
-    return false;
+  if (webGlSupport !== undefined) {
+    return webGlSupport;
   }
 
   const canvas = document.createElement("canvas");
@@ -36,7 +43,16 @@ function canUseWebGl() {
 
   context?.getExtension("WEBGL_lose_context")?.loseContext();
 
-  return context !== null;
+  webGlSupport = context !== null;
+  return webGlSupport;
+}
+
+function subscribeToWebGlSupport() {
+  return () => {};
+}
+
+function readServerWebGlSupport() {
+  return false;
 }
 
 function DitherFallback({
@@ -62,7 +78,12 @@ export function DitherBackdrop({
   theme,
   variant,
 }: DitherBackdropProps) {
-  const [canRenderShader] = useState(canUseWebGl);
+  // Prerendered HTML has the fallback; the shader replaces it after hydration.
+  const canRenderShader = useSyncExternalStore(
+    subscribeToWebGlSupport,
+    canUseWebGl,
+    readServerWebGlSupport,
+  );
 
   return (
     <div

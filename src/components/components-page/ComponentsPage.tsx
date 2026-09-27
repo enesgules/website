@@ -1,6 +1,6 @@
 import { ArrowLeft02Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { useEffect, type MouseEventHandler } from "react";
+import type { MouseEventHandler } from "react";
 import { projects } from "../../data/projects";
 import { ExternalFaviconLink } from "../ExternalFaviconLink";
 import { QuickLinksMenu } from "../QuickLinksMenu";
@@ -12,22 +12,12 @@ import {
   EsnafIcon,
   EsnafSmokingIcon,
 } from "../turkish-icons/TurkishIcons";
-import "./components-page.css";
 
 type ComponentsPageProps = {
   onNavigate: MouseEventHandler<HTMLAnchorElement>;
 };
 
 export function ComponentsPage({ onNavigate }: ComponentsPageProps) {
-  useEffect(() => {
-    const previousTitle = document.title;
-    document.title = "Components · Abdullah Enes Gules";
-
-    return () => {
-      document.title = previousTitle;
-    };
-  }, []);
-
   return (
     <div className="components-page__shell">
       <a className="components-page__back" href="/" onClick={onNavigate}>

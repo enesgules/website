@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useSyncExternalStore } from "react";
 
 export type ColorTheme = "light" | "dark";
 
@@ -9,14 +9,36 @@ const nextTheme = {
   dark: "light",
 } satisfies Record<ColorTheme, ColorTheme>;
 
+const themeListeners = new Set<() => void>();
+
+// The inline script in index.html sets data-theme before hydration.
 function readTheme(): ColorTheme {
-  if (typeof window === "undefined") {
-    return "light";
+  return document.documentElement.dataset.theme === "dark"
+    ? "dark"
+    : "light";
+}
+
+function readServerTheme(): ColorTheme {
+  return "light";
+}
+
+function subscribeToTheme(listener: () => void) {
+  themeListeners.add(listener);
+  return () => {
+    themeListeners.delete(listener);
+  };
+}
+
+function writeTheme(theme: ColorTheme) {
+  document.documentElement.dataset.theme = theme;
+  document
+    .querySelector('meta[name="theme-color"]')
+    ?.setAttribute("content", theme === "dark" ? "#101411" : "#f6f6f3");
+  window.localStorage.setItem(themeStorageKey, theme);
+
+  for (const listener of themeListeners) {
+    listener();
   }
-
-  const storedTheme = window.localStorage.getItem(themeStorageKey);
-
-  return storedTheme === "dark" ? "dark" : "light";
 }
 
 export function getNextTheme(theme: ColorTheme) {
@@ -24,18 +46,14 @@ export function getNextTheme(theme: ColorTheme) {
 }
 
 export function useTheme() {
-  const [theme, setTheme] = useState<ColorTheme>(readTheme);
-
-  useEffect(() => {
-    document.documentElement.dataset.theme = theme;
-    document
-      .querySelector('meta[name="theme-color"]')
-      ?.setAttribute("content", theme === "dark" ? "#101411" : "#f6f6f3");
-    window.localStorage.setItem(themeStorageKey, theme);
-  }, [theme]);
+  const theme = useSyncExternalStore(
+    subscribeToTheme,
+    readTheme,
+    readServerTheme,
+  );
 
   const cycleTheme = useCallback(() => {
-    setTheme((current) => nextTheme[current]);
+    writeTheme(nextTheme[readTheme()]);
   }, []);
 
   return {

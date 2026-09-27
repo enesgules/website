@@ -1,5 +1,5 @@
 import { StrictMode } from "react";
-import { createRoot } from "react-dom/client";
+import { createRoot, hydrateRoot } from "react-dom/client";
 import { App } from "./App";
 import "./styles/global.css";
 
@@ -9,8 +9,15 @@ if (!rootElement) {
   throw new Error("The root element is missing from index.html.");
 }
 
-createRoot(rootElement).render(
+const app = (
   <StrictMode>
-    <App />
-  </StrictMode>,
+    <App initialPathname={window.location.pathname} />
+  </StrictMode>
 );
+
+// Built pages are prerendered; dev and lab pages start with an empty root.
+if (rootElement.hasChildNodes()) {
+  hydrateRoot(rootElement, app);
+} else {
+  createRoot(rootElement).render(app);
+}

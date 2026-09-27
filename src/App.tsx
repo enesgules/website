@@ -15,7 +15,10 @@ import {
   type DitherVariant,
 } from "./components/dither/DitherBackdrop";
 import { PageControls } from "./components/PageControls";
+import { componentsPage, homePage } from "./pages";
 import { useTheme } from "./theme/useTheme";
+// Loaded eagerly so prerendered /components is styled before its lazy chunk.
+import "./components/components-page/components-page.css";
 
 const loadComponentsPage = () =>
   import("./components/components-page/ComponentsPage");
@@ -59,6 +62,10 @@ function ProfilePages({ onNavigate, pathname }: ProfilePagesProps) {
     setDitherVariant("idle");
   }, [pathname]);
 
+  useEffect(() => {
+    document.title = (isComponentsPage ? componentsPage : homePage).title;
+  }, [isComponentsPage]);
+
   return (
     <main
       className={isComponentsPage ? "profile components-page" : "profile"}
@@ -88,8 +95,12 @@ function ProfilePages({ onNavigate, pathname }: ProfilePagesProps) {
   );
 }
 
-export function App() {
-  const [pathname, setPathname] = useState(window.location.pathname);
+type AppProps = {
+  initialPathname: string;
+};
+
+export function App({ initialPathname }: AppProps) {
+  const [pathname, setPathname] = useState(initialPathname);
   const shouldScrollToTopRef = useRef(false);
 
   useEffect(() => {
