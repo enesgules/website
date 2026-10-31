@@ -17,5 +17,5 @@
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true
   },
-  "include": ["src", "og", "vite.config.ts", "remotion.config.ts"]
+  "include": ["src", "og", "worker", "vite.config.ts", "remotion.config.ts"]
 }
