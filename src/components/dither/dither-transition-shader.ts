@@ -283,6 +283,46 @@ float getDktFieldShape(
     return clamp(max(backCard, frontCard) + paperGrain, 0.0, 1.0);
   }
 
+  float broadFlow = 0.5 + 0.5 * snoise(
+    screenUv * 7.0 + vec2(t * 2.0, -t * 1.45)
+  );
+  float fineFlow = 0.5 + 0.5 * snoise(
+    screenUv * 14.0 + vec2(-t * 2.7, t * 1.9) + vec2(8.0, 3.0)
+  );
+  float internalFlow = 0.85 + 0.1 * broadFlow + 0.05 * fineFlow;
+
+  if (fieldStyle > 3.5) {
+    vec2 leftCenter = vec2(0.24, 0.63) + vec2(
+      0.018 * sin(t * 1.31 + 0.3) + 0.008 * sin(t * 2.17 + 1.4),
+      0.016 * cos(t * 1.07 + 0.9) + 0.007 * sin(t * 1.83)
+    );
+    vec2 rightCenter = vec2(0.4, 0.77) + vec2(
+      0.022 * cos(t * 1.43 + 2.1) + 0.007 * sin(t * 2.03),
+      0.018 * sin(t * 1.19 + 1.2) + 0.006 * cos(t * 1.77)
+    );
+    float leftCard = 0.86 * getCardField(
+      screenUv,
+      leftCenter,
+      vec2(0.14, 0.18),
+      0.074,
+      -4.0 + 1.8 * sin(t * 0.74 + 0.5),
+      0.045
+    );
+    float rightCard = getCardField(
+      screenUv,
+      rightCenter,
+      vec2(0.15, 0.19),
+      0.078,
+      3.0 + 1.8 * cos(t * 0.82),
+      0.048
+    );
+    return clamp(
+      max(leftCard, rightCard) * internalFlow + 0.12 * paperGrain,
+      0.0,
+      1.0
+    );
+  }
+
   vec2 topLeftCenter = vec2(0.08, 0.18) + vec2(
     0.018 * sin(t * 1.31 + 0.3) + 0.008 * sin(t * 2.17 + 1.4),
     0.016 * cos(t * 1.07 + 0.9) + 0.007 * sin(t * 1.83)
@@ -319,13 +359,6 @@ float getDktFieldShape(
     5.0 + 1.7 * sin(t * 0.9 + 1.2),
     0.044
   );
-  float broadFlow = 0.5 + 0.5 * snoise(
-    screenUv * 7.0 + vec2(t * 2.0, -t * 1.45)
-  );
-  float fineFlow = 0.5 + 0.5 * snoise(
-    screenUv * 14.0 + vec2(-t * 2.7, t * 1.9) + vec2(8.0, 3.0)
-  );
-  float internalFlow = 0.85 + 0.1 * broadFlow + 0.05 * fineFlow;
   float cardCluster = max(
     topLeftCard,
     max(midRightCard, bottomLeftCard)
@@ -540,8 +573,10 @@ void main() {
       params.x,
       shapeTime
     );
+    // Card positions are drawn around the homepage DKT mask center (0.32, 0.7);
+    // moving the mask moves the cards with it.
     shape = getDktFieldShape(
-      sampleScreenUv,
+      sampleScreenUv - u_masks[i].xy + vec2(0.32, 0.7),
       params.w,
       shape,
       shapeTime

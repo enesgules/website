@@ -26,7 +26,8 @@ export type DktFieldStyle =
   | "wave"
   | "single-card"
   | "offset-pair"
-  | "card-cluster";
+  | "card-cluster"
+  | "card-pair";
 
 type DitherPresetOptions = {
   dktFieldStyle?: DktFieldStyle;
@@ -38,6 +39,7 @@ const dktFieldStyleValues = {
   "single-card": 1,
   "offset-pair": 2,
   "card-cluster": 3,
+  "card-pair": 4,
 } satisfies Record<DktFieldStyle, number>;
 
 const homepagePresetOptions = {

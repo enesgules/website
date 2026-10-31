@@ -8,6 +8,7 @@
     "dev": "vite",
     "build": "tsc --noEmit && vite build && vite build --ssr src/entry-server.tsx --outDir dist-ssr && node scripts/prerender.js",
     "typecheck": "tsc --noEmit",
+    "og": "remotion still OgCard public/og-image.png --frame=0 && remotion render OgCard public/og-video.mp4 --codec=h264 --crf=26 --muted",
     "preview": "vite preview",
     "deploy": "pnpm build && wrangler deploy"
   },
@@ -22,9 +23,11 @@
     "react-dom": "19.2.8"
   },
   "devDependencies": {
+    "@remotion/cli": "4.0.537",
     "@types/react": "19.2.17",
     "@types/react-dom": "19.2.3",
     "@vitejs/plugin-react": "6.0.3",
+    "remotion": "4.0.537",
     "typescript": "7.0.2",
     "vite": "8.1.5",
     "wrangler": "4.113.0"
