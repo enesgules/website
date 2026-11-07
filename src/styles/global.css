@@ -366,12 +366,6 @@ canvas {
   line-height: 1.4;
 }
 
-.typeet-logo {
-  display: block;
-  height: 1.3rem;
-  width: auto;
-}
-
 .profile-footer {
   margin-top: clamp(5.5rem, 13vw, 7.25rem);
   padding-bottom: 2rem;

@@ -3,5 +3,6 @@ Allow: /
 Disallow: /dither-lab
 Disallow: /scrim-lab
 Disallow: /dkt-dither-lab
+Disallow: /typeet-lab
 
 Sitemap: https://enesgules.com/sitemap.xml

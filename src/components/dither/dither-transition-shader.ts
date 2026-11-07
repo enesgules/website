@@ -16,6 +16,11 @@ uniform vec3 u_masks[6];
 uniform vec4 u_weights;
 // Weights of the DKT and Typeet fields.
 uniform vec2 u_extraWeights;
+// Typeet prism: [angle, width, softness, brightness],
+// [bend, spread, length, shimmer], [rainbow start, rainbow length].
+uniform vec4 u_prismBeam;
+uniform vec4 u_prismFan;
+uniform vec2 u_prismLight;
 uniform float u_transitionStyle;
 uniform float u_transitionProgress;
 uniform float u_targetIndex;
@@ -482,8 +487,8 @@ float getVariantWeight(int index) {
   return index == 4 ? u_extraWeights.x : u_extraWeights.y;
 }
 
-// The Typeet field: a beam of light enters from the left, hits the mask
-// center, and fans out into the typeet.com prism colors.
+// The Typeet field: a beam of light comes in, reaches the split point
+// (the mask center), and leaves as a fan in the typeet.com prism colors.
 const vec3 PRISM_COLORS[7] = vec3[7](
   vec3(1.0, 0.122, 0.22),
   vec3(1.0, 0.451, 0.078),
@@ -494,67 +499,77 @@ const vec3 PRISM_COLORS[7] = vec3[7](
   vec3(0.62, 0.2, 1.0)
 );
 
-const float PRISM_BEAM_SLOPE = 0.22;
-const float PRISM_FAN_START = 0.06;
-const float PRISM_FAN_END = 0.58;
-
-vec2 getPrismPoint(vec2 screenUv, vec2 origin) {
-  // Measured in the shorter screen side, so phones get the whole fan too.
-  return (screenUv - origin) * u_resolution
-    / min(u_resolution.x, u_resolution.y);
+vec2 getDirection(float degrees) {
+  float radians = degrees * PI / 180.0;
+  return vec2(cos(radians), sin(radians));
 }
 
-// 0 at the top ray of the fan, 1 at the bottom ray.
-float getPrismFanPosition(vec2 point) {
-  float angle = atan(point.y, max(point.x, 1e-4));
-  return (angle - PRISM_FAN_START) / (PRISM_FAN_END - PRISM_FAN_START);
-}
-
-float getPrismShape(vec2 point, float t) {
-  float radius = length(point);
-  float glow = exp(-radius * radius / 0.0016);
-
-  if (point.x < 0.0) {
-    float beamDistance = abs(point.y - PRISM_BEAM_SLOPE * point.x)
-      / sqrt(1.0 + PRISM_BEAM_SLOPE * PRISM_BEAM_SLOPE);
-    float beam = 1.0 - smoothstep(0.012, 0.03, beamDistance);
-    return clamp(0.92 * beam + glow, 0.0, 1.0);
-  }
-
-  float fan = getPrismFanPosition(point);
-  float inside = smoothstep(0.0, 0.08, fan)
-    * (1.0 - smoothstep(0.92, 1.0, fan));
-  float fade = 1.0 - smoothstep(0.35, 1.9, radius);
-  float shimmer = 0.5 + 0.5 * snoise(
-    vec2(radius * 2.6 - t * 0.5, fan * 3.0)
-  );
-  return clamp(
-    inside * fade * (0.62 + 0.38 * shimmer) + glow,
-    0.0,
-    1.0
-  );
-}
-
-// Dithers between neighboring prism colors, and from the light color to
-// the rainbow as the light travels away from the split point.
-vec3 getPrismColor(
-  vec2 point,
+// Returns the color in rgb and the dither density in a. Distances are in
+// units of the shorter screen side, so phones get the whole fan too.
+vec4 getPrism(
+  vec2 screenUv,
+  vec2 splitPoint,
   vec3 lightColor,
+  float t,
   float colorThreshold,
   float lightThreshold
 ) {
-  if (point.x < 0.0) {
-    return lightColor;
+  vec2 point = (screenUv - splitPoint) * u_resolution
+    / min(u_resolution.x, u_resolution.y);
+  float beamAngle = u_prismBeam.x;
+  float halfWidth = 0.5 * u_prismBeam.y;
+  float softness = u_prismBeam.z;
+  float brightness = u_prismBeam.w;
+  vec2 beamDirection = getDirection(beamAngle);
+
+  if (dot(point, beamDirection) < 0.0) {
+    vec2 beamNormal = vec2(-beamDirection.y, beamDirection.x);
+    float beam = 1.0 - smoothstep(
+      halfWidth * (1.0 - softness),
+      halfWidth,
+      abs(dot(point, beamNormal))
+    );
+    return vec4(lightColor, brightness * beam);
   }
 
-  float band = clamp(getPrismFanPosition(point), 0.0, 1.0) * 6.0;
-  float firstBand = floor(band);
+  // The fan grows from an apex behind the split point, so it is exactly as
+  // wide as the beam where the two meet.
+  float halfSpread = 0.5 * u_prismFan.y * PI / 180.0;
+  vec2 fanDirection = getDirection(beamAngle + u_prismFan.x);
+  vec2 fanNormal = vec2(-fanDirection.y, fanDirection.x);
+  float apexDistance = halfWidth / tan(halfSpread);
+  vec2 fanPoint = point + fanDirection * apexDistance;
+  float angle = atan(
+    dot(fanPoint, fanNormal),
+    dot(fanPoint, fanDirection)
+  );
+  // 0 on the red edge, 1 on the violet edge.
+  float band = (angle + halfSpread) / (2.0 * halfSpread);
+  float edge = max(0.5 * softness, 0.01);
+  float inside = smoothstep(0.0, edge, band)
+    * (1.0 - smoothstep(1.0 - edge, 1.0, band));
+  float travel = max(length(fanPoint) - apexDistance, 0.0);
+  float fade = 1.0 - smoothstep(0.2 * u_prismFan.z, u_prismFan.z, travel);
+  float shimmer = 0.5 + 0.5 * snoise(
+    vec2(travel * 2.6 - t * 0.5, band * 3.0)
+  );
+  float density = brightness * inside * fade
+    * mix(1.0, shimmer, u_prismFan.w);
+
+  // Dither between neighboring colors, and from the light to the rainbow.
+  float scaledBand = clamp(band, 0.0, 1.0) * 6.0;
+  float firstBand = floor(scaledBand);
   int index = int(min(
-    firstBand + step(colorThreshold, band - firstBand),
+    firstBand + step(colorThreshold, scaledBand - firstBand),
     6.0
   ));
-  float light = 1.0 - smoothstep(0.0, 0.5, length(point));
-  return lightThreshold < light ? lightColor : PRISM_COLORS[index];
+  float light = 1.0 - smoothstep(
+    u_prismLight.x,
+    u_prismLight.x + u_prismLight.y,
+    travel
+  );
+  vec3 color = lightThreshold < light ? lightColor : PRISM_COLORS[index];
+  return vec4(color, density);
 }
 
 void main() {
@@ -647,14 +662,16 @@ void main() {
     vec4 frontColor = u_colorFronts[i];
     float shape;
     if (params.w > 4.5) {
-      vec2 prismPoint = getPrismPoint(sampleScreenUv, u_masks[i].xy);
-      shape = getPrismShape(prismPoint, shapeTime);
-      frontColor.rgb = getPrismColor(
-        prismPoint,
+      vec4 prism = getPrism(
+        sampleScreenUv,
+        u_masks[i].xy,
         frontColor.rgb,
+        shapeTime,
         fract(threshold + 0.5),
         fract(threshold + 0.25)
       );
+      frontColor.rgb = prism.rgb;
+      shape = prism.a;
     } else {
       shape = evaluateShape(
         shapeUv,

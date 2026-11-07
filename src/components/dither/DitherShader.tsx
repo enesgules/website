@@ -29,9 +29,46 @@ export type DktFieldStyle =
   | "card-cluster"
   | "card-pair";
 
+// The knobs of the Typeet prism. Distances are in units of the shorter
+// screen side; angles are in degrees, and positive angles point down.
+export type PrismSettings = {
+  splitX: number;
+  splitY: number;
+  beamAngle: number;
+  beamWidth: number;
+  beamSoftness: number;
+  brightness: number;
+  fanBend: number;
+  fanSpread: number;
+  fanLength: number;
+  shimmer: number;
+  rainbowStart: number;
+  rainbowLength: number;
+  pixelSize: number;
+  speed: number;
+};
+
+export const defaultPrismSettings: PrismSettings = {
+  splitX: 0.2,
+  splitY: 0.36,
+  beamAngle: 12,
+  beamWidth: 0.024,
+  beamSoftness: 0.35,
+  brightness: 0.9,
+  fanBend: 6,
+  fanSpread: 28,
+  fanLength: 1.6,
+  shimmer: 0.35,
+  rainbowStart: 0.04,
+  rainbowLength: 0.35,
+  pixelSize: 2,
+  speed: 0.6,
+};
+
 type DitherPresetOptions = {
   dktFieldStyle?: DktFieldStyle;
   idleColor?: string;
+  prism?: PrismSettings;
 };
 
 const dktFieldStyleValues = {
@@ -147,17 +184,18 @@ const ditherPresets = {
     offsetY: 0.36,
   },
   // The shader draws Typeet as a prism: colorFront is the light before the
-  // split, and the mask center is the split point.
+  // split, and the mask center is the split point. PrismSettings set the
+  // mask center, size, and speed.
   typeet: {
     colorFront: {
       light: "#8d949c",
       dark: "#ededef",
     },
-    mask: [0.2, 0.36, 1.6],
+    mask: [defaultPrismSettings.splitX, defaultPrismSettings.splitY, 1.6],
     shape: "simplex",
-    size: 2,
+    size: defaultPrismSettings.pixelSize,
     scale: 1,
-    speed: 0.6,
+    speed: defaultPrismSettings.speed,
     rotation: 0,
     offsetX: 0,
     offsetY: 0,
@@ -248,7 +286,16 @@ function getShaderPreset(
   theme: ColorTheme,
   options: DitherPresetOptions,
 ) {
-  const preset = ditherPresets[variant];
+  const prism = options.prism ?? defaultPrismSettings;
+  const preset =
+    variant === "typeet"
+      ? {
+          ...ditherPresets.typeet,
+          mask: [prism.splitX, prism.splitY, 1.6] satisfies DitherPreset["mask"],
+          size: prism.pixelSize,
+          speed: prism.speed,
+        }
+      : ditherPresets[variant];
 
   return {
     color: getShaderColorFromString(
@@ -325,8 +372,22 @@ export function getPresetUniforms(
   const presets = ditherVariants.map((variant) =>
     getShaderPreset(variant, theme, options),
   );
+  const prism = options.prism ?? defaultPrismSettings;
 
   return {
+    u_prismBeam: [
+      prism.beamAngle,
+      prism.beamWidth,
+      prism.beamSoftness,
+      prism.brightness,
+    ],
+    u_prismFan: [
+      prism.fanBend,
+      prism.fanSpread,
+      prism.fanLength,
+      prism.shimmer,
+    ],
+    u_prismLight: [prism.rainbowStart, prism.rainbowLength],
     u_colorBack: getShaderColorFromString(
       theme === "dark" ? "#101411" : "#f6f6f3",
     ),
