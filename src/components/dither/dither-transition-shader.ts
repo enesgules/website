@@ -620,38 +620,14 @@ vec3 getRainbowColor(float band, float colorThreshold) {
   return PRISM_COLORS[index];
 }
 
-// The glass: a thin bright rim, a beveled border lit on the side that faces
-// the light, an inner edge, a dark body, and glints on the rim where the
-// light goes in and out. The glints stay on the rim, so they never cover the
-// light inside the glass.
-float getGlass(
-  vec2 p,
-  float depth,
-  float size,
-  vec2 lightDirection,
-  vec2 entryPoint,
-  vec2 exitPoint,
-  float t
-) {
-  float bevel = 0.16 * size;
-  float faceAngle = atan(p.y, p.x) - PI / 6.0;
-  faceAngle = PI / 6.0 + PI / 3.0 * floor(faceAngle / (PI / 3.0) + 0.5);
-  vec2 faceNormal = vec2(cos(faceAngle), sin(faceAngle));
-  float facingLight = 0.5 - 0.5 * dot(faceNormal, lightDirection);
-
-  float rim = 1.0 - smoothstep(0.0, 0.004, depth);
-  float innerEdge = 1.0 - smoothstep(0.0, 0.0025, abs(depth - bevel));
-  float bevelFace = step(depth, bevel)
-    * (0.03 + 0.22 * facingLight)
-    * (1.0 - 0.6 * depth / bevel);
+// The glass is flat: a thin outline, a faint body, and glints on the
+// outline where the light goes in and out.
+float getGlass(vec2 p, float depth, vec2 entryPoint, vec2 exitPoint, float t) {
+  float outline = 1.0 - smoothstep(0.0, 0.004, depth);
   float body = 0.01 + 0.015 * (0.5 + 0.5 * snoise(p * 7.0 + t * 0.15));
   float glint = exp(-pow(length(p - entryPoint) / 0.025, 2.0))
     + exp(-pow(length(p - exitPoint) / 0.035, 2.0));
-
-  return max(
-    max(rim * (0.35 + 0.6 * facingLight), innerEdge * 0.22),
-    max(max(bevelFace, body), min(glint, 1.0) * rim)
-  );
+  return max(body, outline * min(0.7 + glint, 1.0));
 }
 
 // Returns the color in rgb and the dither density in a. Distances are in
@@ -726,15 +702,7 @@ vec4 getPrism(
   float along = dot(p - entryPoint, direction);
 
   if (depth > 0.0) {
-    float glass = getGlass(
-      p,
-      depth,
-      size,
-      direction,
-      entryPoint,
-      exitPoint,
-      t
-    );
+    float glass = getGlass(p, depth, entryPoint, exitPoint, t);
     if (!hits) {
       return vec4(lightColor, glass);
     }
@@ -765,7 +733,12 @@ vec4 getPrism(
     return vec4(lightColor, glass);
   }
 
-  if (!hits || along < 0.0) {
+  // Outside the glass, the side nearer the entry is the incoming beam. The
+  // entry face is slanted, so part of the beam reaches it after the entry
+  // point.
+  bool nearEntry = along < size
+    && length(p - entryPoint) < length(p - exitPoint);
+  if (!hits || along < 0.0 || nearEntry) {
     float wave = exp(-pow((along - wavePosition) / 0.18, 2.0));
     brightness *= 1.0 + 0.6 * u_prismMotion.y * wave;
     vec2 beamNormal = vec2(-direction.y, direction.x);
