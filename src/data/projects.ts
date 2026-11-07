@@ -1,7 +1,11 @@
+import type { ComponentType } from "react";
 import type { DitherVariant } from "../components/dither/DitherBackdrop";
+import { TypeetLogo } from "../components/TypeetLogo";
 
 export type Project = {
   name: string;
+  // Shown in place of the name.
+  logo?: ComponentType;
   description: string;
   href: string;
   dither: Exclude<DitherVariant, "idle">;
@@ -35,5 +39,13 @@ export const projects: ReadonlyArray<Project> = [
       "Generate printable materials with AI for Turkish speech therapists.",
     href: "https://dktmateryal.com",
     dither: "dkt",
+  },
+  {
+    name: "Typeet",
+    logo: TypeetLogo,
+    description:
+      "Type your language and English on one keyboard. Typeet adds the missing letters as you type.",
+    href: "https://typeet.com",
+    dither: "typeet",
   },
 ];

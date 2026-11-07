@@ -8,13 +8,14 @@ uniform vec2 u_resolution;
 uniform float u_pixelRatio;
 
 uniform vec4 u_colorBack;
-uniform vec4 u_colorFronts[5];
-uniform vec4 u_params[5];
-uniform vec2 u_offsets[5];
-uniform vec2 u_motion[5];
-uniform vec3 u_masks[5];
+uniform vec4 u_colorFronts[6];
+uniform vec4 u_params[6];
+uniform vec2 u_offsets[6];
+uniform vec2 u_motion[6];
+uniform vec3 u_masks[6];
 uniform vec4 u_weights;
-uniform float u_dktWeight;
+// Weights of the DKT and Typeet fields.
+uniform vec2 u_extraWeights;
 uniform float u_transitionStyle;
 uniform float u_transitionProgress;
 uniform float u_targetIndex;
@@ -478,13 +479,88 @@ float getVariantWeight(int index) {
   if (index < 4) {
     return u_weights[index];
   }
-  return u_dktWeight;
+  return index == 4 ? u_extraWeights.x : u_extraWeights.y;
+}
+
+// The Typeet field: a beam of light enters from the left, hits the mask
+// center, and fans out into the typeet.com prism colors.
+const vec3 PRISM_COLORS[7] = vec3[7](
+  vec3(1.0, 0.122, 0.22),
+  vec3(1.0, 0.451, 0.078),
+  vec3(1.0, 0.859, 0.161),
+  vec3(0.22, 0.949, 0.38),
+  vec3(0.102, 0.8, 1.0),
+  vec3(0.22, 0.322, 1.0),
+  vec3(0.62, 0.2, 1.0)
+);
+
+const float PRISM_BEAM_SLOPE = 0.22;
+const float PRISM_FAN_START = 0.06;
+const float PRISM_FAN_END = 0.58;
+
+vec2 getPrismPoint(vec2 screenUv, vec2 origin) {
+  // Measured in the shorter screen side, so phones get the whole fan too.
+  return (screenUv - origin) * u_resolution
+    / min(u_resolution.x, u_resolution.y);
+}
+
+// 0 at the top ray of the fan, 1 at the bottom ray.
+float getPrismFanPosition(vec2 point) {
+  float angle = atan(point.y, max(point.x, 1e-4));
+  return (angle - PRISM_FAN_START) / (PRISM_FAN_END - PRISM_FAN_START);
+}
+
+float getPrismShape(vec2 point, float t) {
+  float radius = length(point);
+  float glow = exp(-radius * radius / 0.0016);
+
+  if (point.x < 0.0) {
+    float beamDistance = abs(point.y - PRISM_BEAM_SLOPE * point.x)
+      / sqrt(1.0 + PRISM_BEAM_SLOPE * PRISM_BEAM_SLOPE);
+    float beam = 1.0 - smoothstep(0.012, 0.03, beamDistance);
+    return clamp(0.92 * beam + glow, 0.0, 1.0);
+  }
+
+  float fan = getPrismFanPosition(point);
+  float inside = smoothstep(0.0, 0.08, fan)
+    * (1.0 - smoothstep(0.92, 1.0, fan));
+  float fade = 1.0 - smoothstep(0.35, 1.9, radius);
+  float shimmer = 0.5 + 0.5 * snoise(
+    vec2(radius * 2.6 - t * 0.5, fan * 3.0)
+  );
+  return clamp(
+    inside * fade * (0.62 + 0.38 * shimmer) + glow,
+    0.0,
+    1.0
+  );
+}
+
+// Dithers between neighboring prism colors, and from the light color to
+// the rainbow as the light travels away from the split point.
+vec3 getPrismColor(
+  vec2 point,
+  vec3 lightColor,
+  float colorThreshold,
+  float lightThreshold
+) {
+  if (point.x < 0.0) {
+    return lightColor;
+  }
+
+  float band = clamp(getPrismFanPosition(point), 0.0, 1.0) * 6.0;
+  float firstBand = floor(band);
+  int index = int(min(
+    firstBand + step(colorThreshold, band - firstBand),
+    6.0
+  ));
+  float light = 1.0 - smoothstep(0.0, 0.5, length(point));
+  return lightThreshold < light ? lightColor : PRISM_COLORS[index];
 }
 
 void main() {
   float sharedPxSize = 0.0;
   float maxWeight = 0.0;
-  for (int i = 0; i < 5; i++) {
+  for (int i = 0; i < 6; i++) {
     float weight = getVariantWeight(i);
     sharedPxSize += weight * u_params[i].y;
     maxWeight = max(maxWeight, weight);
@@ -525,7 +601,7 @@ void main() {
   float sourceOpacity = 0.0;
   float targetOpacity = 0.0;
 
-  for (int i = 0; i < 5; i++) {
+  for (int i = 0; i < 6; i++) {
     float weight = getVariantWeight(i);
     if (weight <= 0.0001) {
       continue;
@@ -568,19 +644,32 @@ void main() {
       u_offsets[i]
     );
     float shapeTime = 0.5 * u_time * motion.y;
-    float shape = evaluateShape(
-      shapeUv,
-      params.x,
-      shapeTime
-    );
-    // Card positions are drawn around the homepage DKT mask center (0.32, 0.7);
-    // moving the mask moves the cards with it.
-    shape = getDktFieldShape(
-      sampleScreenUv - u_masks[i].xy + vec2(0.32, 0.7),
-      params.w,
-      shape,
-      shapeTime
-    );
+    vec4 frontColor = u_colorFronts[i];
+    float shape;
+    if (params.w > 4.5) {
+      vec2 prismPoint = getPrismPoint(sampleScreenUv, u_masks[i].xy);
+      shape = getPrismShape(prismPoint, shapeTime);
+      frontColor.rgb = getPrismColor(
+        prismPoint,
+        frontColor.rgb,
+        fract(threshold + 0.5),
+        fract(threshold + 0.25)
+      );
+    } else {
+      shape = evaluateShape(
+        shapeUv,
+        params.x,
+        shapeTime
+      );
+      // Card positions are drawn around the homepage DKT mask center (0.32, 0.7);
+      // moving the mask moves the cards with it.
+      shape = getDktFieldShape(
+        sampleScreenUv - u_masks[i].xy + vec2(0.32, 0.7),
+        params.w,
+        shape,
+        shapeTime
+      );
+    }
     float mask = getFieldMask(sampleScreenUv, u_masks[i]);
     float coverage = smoothstep(
       threshold - coverageFeather,
@@ -590,7 +679,6 @@ void main() {
     fieldShape += weight * shape;
     fieldMask += weight * mask;
 
-    vec4 frontColor = u_colorFronts[i];
     frontLinear += weight * pow(
       max(frontColor.rgb, vec3(0.0)),
       vec3(2.2)

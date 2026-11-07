@@ -146,6 +146,22 @@ const ditherPresets = {
     offsetX: -0.3,
     offsetY: 0.36,
   },
+  // The shader draws Typeet as a prism: colorFront is the light before the
+  // split, and the mask center is the split point.
+  typeet: {
+    colorFront: {
+      light: "#8d949c",
+      dark: "#ededef",
+    },
+    mask: [0.2, 0.36, 1.6],
+    shape: "simplex",
+    size: 2,
+    scale: 1,
+    speed: 0.6,
+    rotation: 0,
+    offsetX: 0,
+    offsetY: 0,
+  },
 } satisfies Record<DitherVariant, DitherPreset>;
 
 type ShaderPreferences = {
@@ -213,9 +229,19 @@ const ditherVariants = [
   "hugeicons",
   "distributed",
   "dkt",
+  "typeet",
 ] satisfies DitherVariant[];
 
-export type VariantWeights = [number, number, number, number, number];
+export type VariantWeights = [
+  number,
+  number,
+  number,
+  number,
+  number,
+  number,
+];
+
+const prismFieldStyle = 5;
 
 function getShaderPreset(
   variant: DitherVariant,
@@ -249,17 +275,18 @@ export function getVariantWeights(
     variant === "hugeicons" ? 1 : 0,
     variant === "distributed" ? 1 : 0,
     variant === "dkt" ? 1 : 0,
+    variant === "typeet" ? 1 : 0,
   ];
 }
 
-function getEmptyWeights(): VariantWeights {
-  return [0, 0, 0, 0, 0];
+export function getEmptyWeights(): VariantWeights {
+  return [0, 0, 0, 0, 0, 0];
 }
 
 export function getWeightUniforms(weights: VariantWeights) {
   return {
     u_weights: weights.slice(0, 4),
-    u_dktWeight: weights[4],
+    u_extraWeights: weights.slice(4, 6),
   };
 }
 
@@ -277,6 +304,17 @@ export function getSpatialTransitionUniforms({
     u_transitionOrigin: targetPreset.mask.slice(0, 2),
     u_transitionProgress: progress,
   };
+}
+
+function getFieldStyle(
+  variant: DitherVariant,
+  options: DitherPresetOptions,
+) {
+  if (variant === "dkt") {
+    return dktFieldStyleValues[options.dktFieldStyle ?? "wave"];
+  }
+
+  return variant === "typeet" ? prismFieldStyle : 0;
 }
 
 export function getPresetUniforms(
@@ -305,9 +343,7 @@ export function getPresetUniforms(
       preset.shape,
       preset.pxSize,
       preset.scale,
-      index === 4
-        ? dktFieldStyleValues[options.dktFieldStyle ?? "wave"]
-        : 0,
+      getFieldStyle(ditherVariants[index], options),
     ]),
   };
 }

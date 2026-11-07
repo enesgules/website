@@ -24,10 +24,12 @@
   --accent-hugeicons: #6fae45;
   --accent-distributed: #4267bd;
   --accent-dkt: #92724c;
+  --accent-typeet: #3852ff;
   --accent-context7-opacity: 0.16;
   --accent-hugeicons-opacity: 0.2;
   --accent-distributed-opacity: 0.2;
   --accent-dkt-opacity: 0.18;
+  --accent-typeet-opacity: 0.18;
   --control-shadow:
     0 0 0 1px rgb(0 0 0 / 6%),
     0 1px 2px rgb(0 0 0 / 7%),
@@ -364,6 +366,12 @@ canvas {
   line-height: 1.4;
 }
 
+.typeet-logo {
+  display: block;
+  height: 1.3rem;
+  width: auto;
+}
+
 .profile-footer {
   margin-top: clamp(5.5rem, 13vw, 7.25rem);
   padding-bottom: 2rem;
@@ -648,10 +656,12 @@ canvas {
   --accent-hugeicons: #8acb5a;
   --accent-distributed: #6482c7;
   --accent-dkt: #b9956c;
+  --accent-typeet: #6a7dff;
   --accent-context7-opacity: 0.2;
   --accent-hugeicons-opacity: 0.24;
   --accent-distributed-opacity: 0.26;
   --accent-dkt-opacity: 0.24;
+  --accent-typeet-opacity: 0.24;
   --control-shadow: 0 0 0 1px rgb(255 255 255 / 9%);
   --dither-opacity: 0.56;
   --dither-active-opacity: 0.7;

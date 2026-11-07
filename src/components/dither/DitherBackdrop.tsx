@@ -12,7 +12,8 @@ export type DitherVariant =
   | "context7"
   | "hugeicons"
   | "distributed"
-  | "dkt";
+  | "dkt"
+  | "typeet";
 
 type DitherBackdropProps = {
   idleColor?: string;

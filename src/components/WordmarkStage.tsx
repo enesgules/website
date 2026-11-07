@@ -323,7 +323,9 @@ export function WordmarkContent({
               onFocus={() => onDitherVariantChange(project.dither)}
               onBlur={() => onDitherVariantChange("idle")}
             >
-              <span className="project-entry__title">{project.name}</span>
+              <span className="project-entry__title">
+                {project.logo ? <project.logo /> : project.name}
+              </span>
               <span className="project-entry__description">
                 {project.description}
               </span>

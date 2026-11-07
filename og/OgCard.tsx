@@ -9,6 +9,7 @@ import {
   useVideoConfig,
 } from "remotion";
 import {
+  getEmptyWeights,
   getPresetUniforms,
   getVariantWeights,
   getWeightUniforms,
@@ -25,6 +26,7 @@ const accents = {
   hugeicons: "#6fae45",
   distributed: "#4267bd",
   dkt: "#92724c",
+  typeet: "#3852ff",
 } as const;
 
 // Idle, then each project, then idle again so the video ends where it starts.
@@ -70,7 +72,7 @@ function stepPosition(frame: number, index: number) {
 }
 
 function getWeights(frame: number): VariantWeights {
-  const weights: VariantWeights = [0, 0, 0, 0, 0];
+  const weights: VariantWeights = getEmptyWeights();
 
   timeline.forEach((step, index) => {
     getVariantWeights(step.variant).forEach((weight, slot) => {
@@ -83,7 +85,7 @@ function getWeights(frame: number): VariantWeights {
 
 // The homepage places each field for a tall page. These masks ([x, y, radius] in screen space)
 // and shape offsets frame every field on the right side of the wide card. Order: idle,
-// context7, hugeicons, distributed, dkt. DKT shows two floating cards, which follow its mask.
+// context7, hugeicons, distributed, dkt, typeet. DKT shows two floating cards, which follow its mask.
 const homepageUniforms = getPresetUniforms("light", "crossfade", { dktFieldStyle: "card-pair" });
 const presetUniforms = {
   ...homepageUniforms,
@@ -100,6 +102,7 @@ const presetUniforms = {
     [0.82, 0.5, 0.44],
     [0.84, 0.5, 0.72],
     [0.81, 0.5, 0.75],
+    [0.62, 0.5, 1.2],
   ],
   "u_offsets[0]": [
     [0.5, -0.1],
@@ -107,6 +110,7 @@ const presetUniforms = {
     [-0.42, 0],
     [0.66, 0],
     [0.57, 0.1],
+    [0, 0],
   ],
 };
 

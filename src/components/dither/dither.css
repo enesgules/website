@@ -90,6 +90,13 @@
   opacity: var(--accent-dkt-opacity);
 }
 
+.dither-field[data-variant="typeet"]::before {
+  --dither-x: 20%;
+  --dither-y: 36%;
+  background-color: var(--accent-typeet);
+  opacity: var(--accent-typeet-opacity);
+}
+
 .dither-field:not(.dither-field--fallback)::before {
   opacity: 0;
 }

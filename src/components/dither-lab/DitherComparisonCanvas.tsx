@@ -34,6 +34,7 @@ function mixWeights(
     from[2] + (to[2] - from[2]) * progress,
     from[3] + (to[3] - from[3]) * progress,
     from[4] + (to[4] - from[4]) * progress,
+    from[5] + (to[5] - from[5]) * progress,
   ];
 }
 
