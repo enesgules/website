@@ -35,6 +35,7 @@ const knobGroups: { title: string; knobs: Knob[] }[] = [
       { key: "beamAngle", label: "Angle", min: -45, max: 45, step: 1 },
       { key: "beamWidth", label: "Width", min: 0.004, max: 0.12, step: 0.002 },
       { key: "beamSoftness", label: "Soft edge", min: 0, max: 1, step: 0.05 },
+      { key: "beamTexture", label: "Texture", min: 0, max: 1, step: 0.05 },
       { key: "brightness", label: "Brightness", min: 0.2, max: 1, step: 0.05 },
     ],
   },
@@ -55,9 +56,8 @@ const knobGroups: { title: string; knobs: Knob[] }[] = [
     ],
   },
   {
-    title: "Pixels",
+    title: "Motion",
     knobs: [
-      { key: "pixelSize", label: "Size", min: 1, max: 5, step: 0.25 },
       { key: "speed", label: "Speed", min: 0, max: 2, step: 0.05 },
     ],
   },

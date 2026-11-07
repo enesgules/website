@@ -37,6 +37,7 @@ export type PrismSettings = {
   beamAngle: number;
   beamWidth: number;
   beamSoftness: number;
+  beamTexture: number;
   brightness: number;
   fanBend: number;
   fanSpread: number;
@@ -44,24 +45,23 @@ export type PrismSettings = {
   shimmer: number;
   rainbowStart: number;
   rainbowLength: number;
-  pixelSize: number;
   speed: number;
 };
 
 export const defaultPrismSettings: PrismSettings = {
-  splitX: 0.2,
-  splitY: 0.36,
-  beamAngle: 12,
-  beamWidth: 0.024,
-  beamSoftness: 0.35,
-  brightness: 0.9,
-  fanBend: 6,
-  fanSpread: 28,
-  fanLength: 1.6,
-  shimmer: 0.35,
-  rainbowStart: 0.04,
-  rainbowLength: 0.35,
-  pixelSize: 2,
+  splitX: 0.14,
+  splitY: 0.27,
+  beamAngle: 11,
+  beamWidth: 0.02,
+  beamSoftness: 0.45,
+  beamTexture: 0.6,
+  brightness: 1,
+  fanBend: 4,
+  fanSpread: 41,
+  fanLength: 2.7,
+  shimmer: 0.4,
+  rainbowStart: 0.01,
+  rainbowLength: 0.25,
   speed: 0.6,
 };
 
@@ -185,7 +185,7 @@ const ditherPresets = {
   },
   // The shader draws Typeet as a prism: colorFront is the light before the
   // split, and the mask center is the split point. PrismSettings set the
-  // mask center, size, and speed.
+  // mask center and speed; the pixel size is the idle size.
   typeet: {
     colorFront: {
       light: "#8d949c",
@@ -193,7 +193,7 @@ const ditherPresets = {
     },
     mask: [defaultPrismSettings.splitX, defaultPrismSettings.splitY, 1.6],
     shape: "simplex",
-    size: defaultPrismSettings.pixelSize,
+    size: 1.65,
     scale: 1,
     speed: defaultPrismSettings.speed,
     rotation: 0,
@@ -292,7 +292,6 @@ function getShaderPreset(
       ? {
           ...ditherPresets.typeet,
           mask: [prism.splitX, prism.splitY, 1.6] satisfies DitherPreset["mask"],
-          size: prism.pixelSize,
           speed: prism.speed,
         }
       : ditherPresets[variant];
@@ -387,7 +386,11 @@ export function getPresetUniforms(
       prism.fanLength,
       prism.shimmer,
     ],
-    u_prismLight: [prism.rainbowStart, prism.rainbowLength],
+    u_prismLight: [
+      prism.rainbowStart,
+      prism.rainbowLength,
+      prism.beamTexture,
+    ],
     u_colorBack: getShaderColorFromString(
       theme === "dark" ? "#101411" : "#f6f6f3",
     ),

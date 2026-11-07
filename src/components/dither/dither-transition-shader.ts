@@ -17,10 +17,11 @@ uniform vec4 u_weights;
 // Weights of the DKT and Typeet fields.
 uniform vec2 u_extraWeights;
 // Typeet prism: [angle, width, softness, brightness],
-// [bend, spread, length, shimmer], [rainbow start, rainbow length].
+// [bend, spread, length, shimmer],
+// [rainbow start, rainbow length, beam texture].
 uniform vec4 u_prismBeam;
 uniform vec4 u_prismFan;
-uniform vec2 u_prismLight;
+uniform vec3 u_prismLight;
 uniform float u_transitionStyle;
 uniform float u_transitionProgress;
 uniform float u_targetIndex;
@@ -522,14 +523,27 @@ vec4 getPrism(
   float brightness = u_prismBeam.w;
   vec2 beamDirection = getDirection(beamAngle);
 
-  if (dot(point, beamDirection) < 0.0) {
+  float along = dot(point, beamDirection);
+  if (along < 0.0) {
     vec2 beamNormal = vec2(-beamDirection.y, beamDirection.x);
-    float beam = 1.0 - smoothstep(
-      halfWidth * (1.0 - softness),
-      halfWidth,
-      abs(dot(point, beamNormal))
+    // -1 on one edge of the beam, 1 on the other.
+    float across = dot(point, beamNormal) / max(halfWidth, 1e-4);
+    float beam = 1.0 - smoothstep(1.0 - softness, 1.0, abs(across));
+    // Light-beam texture: a brighter core, and long streaks that drift
+    // along the beam toward the split point.
+    float core = 1.0 - 0.45 * across * across;
+    float streaks = 0.5 + 0.5 * snoise(
+      vec2(along * 3.0 - t * 0.9, across * 1.6)
     );
-    return vec4(lightColor, brightness * beam);
+    float flicker = 0.5 + 0.5 * snoise(
+      vec2(along * 11.0 - t * 2.2, across * 3.5 + 7.0)
+    );
+    float grain = mix(
+      1.0,
+      core * (0.55 + 0.3 * streaks + 0.25 * flicker),
+      u_prismLight.z
+    );
+    return vec4(lightColor, brightness * beam * grain);
   }
 
   // The fan grows from an apex behind the split point, so it is exactly as
