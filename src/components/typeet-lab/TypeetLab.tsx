@@ -23,16 +23,20 @@ type Knob = {
 
 const knobGroups: { title: string; knobs: Knob[] }[] = [
   {
-    title: "Split point",
+    title: "Prism",
     knobs: [
-      { key: "splitX", label: "X", min: 0, max: 1, step: 0.01 },
-      { key: "splitY", label: "Y", min: 0, max: 1, step: 0.01 },
+      { key: "prismX", label: "X", min: 0, max: 1, step: 0.01 },
+      { key: "prismY", label: "Y", min: 0, max: 1, step: 0.01 },
+      { key: "prismSize", label: "Size", min: 0.02, max: 0.3, step: 0.005 },
+      { key: "refraction", label: "Refraction", min: 1.05, max: 1.8, step: 0.01 },
+      { key: "dispersion", label: "Dispersion", min: 0, max: 0.8, step: 0.01 },
     ],
   },
   {
     title: "Beam",
     knobs: [
       { key: "beamAngle", label: "Angle", min: -45, max: 45, step: 1 },
+      { key: "aim", label: "Aim", min: -0.9, max: 0.9, step: 0.05 },
       { key: "beamWidth", label: "Width", min: 0.004, max: 0.12, step: 0.002 },
       { key: "beamSoftness", label: "Soft edge", min: 0, max: 1, step: 0.05 },
       { key: "beamTexture", label: "Texture", min: 0, max: 1, step: 0.05 },
@@ -40,25 +44,18 @@ const knobGroups: { title: string; knobs: Knob[] }[] = [
     ],
   },
   {
-    title: "Fan",
-    knobs: [
-      { key: "fanBend", label: "Bend", min: -30, max: 40, step: 1 },
-      { key: "fanSpread", label: "Spread", min: 4, max: 80, step: 1 },
-      { key: "fanLength", label: "Length", min: 0.3, max: 3, step: 0.05 },
-      { key: "shimmer", label: "Shimmer", min: 0, max: 1, step: 0.05 },
-    ],
-  },
-  {
     title: "Rainbow",
     knobs: [
-      { key: "rainbowStart", label: "Starts after", min: 0, max: 1, step: 0.01 },
-      { key: "rainbowLength", label: "Blend length", min: 0.01, max: 1.5, step: 0.01 },
+      { key: "fanLength", label: "Length", min: 0.3, max: 3, step: 0.05 },
+      { key: "shimmer", label: "Shimmer", min: 0, max: 1, step: 0.05 },
     ],
   },
   {
     title: "Motion",
     knobs: [
       { key: "speed", label: "Speed", min: 0, max: 2, step: 0.05 },
+      { key: "sway", label: "Sway", min: 0, max: 20, step: 0.5 },
+      { key: "wave", label: "Light wave", min: 0, max: 2, step: 0.05 },
     ],
   },
 ];

@@ -17,11 +17,12 @@ uniform vec4 u_weights;
 // Weights of the DKT and Typeet fields.
 uniform vec2 u_extraWeights;
 // Typeet prism: [angle, width, softness, brightness],
-// [bend, spread, length, shimmer],
-// [rainbow start, rainbow length, beam texture].
+// [size, refraction index, dispersion, aim],
+// [rainbow length, shimmer, beam texture], [sway in degrees, light wave].
 uniform vec4 u_prismBeam;
-uniform vec4 u_prismFan;
+uniform vec4 u_prismGlass;
 uniform vec3 u_prismLight;
+uniform vec2 u_prismMotion;
 uniform float u_transitionStyle;
 uniform float u_transitionProgress;
 uniform float u_targetIndex;
@@ -505,32 +506,273 @@ vec2 getDirection(float degrees) {
   return vec2(cos(radians), sin(radians));
 }
 
+vec2 rotateVector(vec2 v, float radians) {
+  float c = cos(radians);
+  float s = sin(radians);
+  return vec2(c * v.x - s * v.y, s * v.x + c * v.y);
+}
+
+// The prism is a hexagon with flat top and bottom faces and a vertex on
+// each side. The top two slanted faces meet at 60 degrees, like a bench
+// prism. r is the distance from the center to a face.
+float getHexagonDistance(vec2 p, float r) {
+  const vec3 k = vec3(-0.866025404, 0.5, 0.577350269);
+  p = abs(p);
+  p -= 2.0 * min(dot(k.xy, p), 0.0) * k.xy;
+  p -= vec2(clamp(p.x, -k.z * r, k.z * r), r);
+  return length(p) * sign(p.y);
+}
+
+// The outward normal of face k (y points down).
+vec2 getFaceNormal(int k) {
+  float angle = (30.0 + 60.0 * float(k)) * PI / 180.0;
+  return vec2(cos(angle), sin(angle));
+}
+
+// Where a ray from outside comes into the hexagon: x is the distance along
+// the ray, y the face. x is -1 when the ray misses.
+vec2 enterHexagon(vec2 origin, vec2 direction, float r) {
+  float enter = -1e9;
+  float leave = 1e9;
+  float face = 0.0;
+  for (int k = 0; k < 6; k++) {
+    vec2 normal = getFaceNormal(k);
+    float facing = dot(direction, normal);
+    float hit = (r - dot(origin, normal)) / facing;
+    if (facing < -1e-5 && hit > enter) {
+      enter = hit;
+      face = float(k);
+    } else if (facing > 1e-5) {
+      leave = min(leave, hit);
+    }
+  }
+  return enter < leave ? vec2(enter, face) : vec2(-1.0);
+}
+
+// Where a ray from inside goes out of the hexagon: x is the distance, y the
+// face.
+vec2 leaveHexagon(vec2 origin, vec2 direction, float r) {
+  float leave = 1e9;
+  float face = 0.0;
+  for (int k = 0; k < 6; k++) {
+    vec2 normal = getFaceNormal(k);
+    float facing = dot(direction, normal);
+    float hit = (r - dot(origin, normal)) / max(facing, 1e-5);
+    if (facing > 1e-5 && hit < leave) {
+      leave = hit;
+      face = float(k);
+    }
+  }
+  return vec2(leave, face);
+}
+
+// Light that goes out of glass with refraction index n. Past the critical
+// angle the light reflects inside; it then skims along the face, the limit
+// of the light that still gets out.
+vec2 refractOut(vec2 direction, vec2 normal, float n) {
+  vec2 refracted = refract(direction, -normal, n);
+  if (dot(refracted, refracted) < 1e-6) {
+    return normalize(direction - normal * dot(direction, normal));
+  }
+  return refracted;
+}
+
+// A fan of light that leaves a segment halfWidth wide around origin, with
+// red going along redDirection and violet along violetDirection. Returns
+// the band (0 red, 1 violet), the distance traveled past the origin, and the
+// edge-softened coverage of the band.
+vec3 sampleFan(
+  vec2 p,
+  vec2 origin,
+  vec2 redDirection,
+  vec2 violetDirection,
+  float halfWidth,
+  float softness
+) {
+  vec2 direction = normalize(redDirection + violetDirection);
+  vec2 normal = vec2(-direction.y, direction.x);
+  float halfSpread = max(
+    0.5 * acos(clamp(dot(redDirection, violetDirection), -1.0, 1.0)),
+    1e-3
+  );
+  // The fan grows from an apex behind the origin, so it is exactly
+  // halfWidth wide there.
+  float apexDistance = halfWidth / tan(halfSpread);
+  vec2 fanPoint = p - origin + direction * apexDistance;
+  float forward = dot(fanPoint, direction);
+  float angle = atan(dot(fanPoint, normal), forward);
+  float redSide = dot(redDirection, normal) < 0.0 ? -1.0 : 1.0;
+  float band = 0.5 - 0.5 * redSide * angle / halfSpread;
+  float edge = max(0.5 * softness, 0.01);
+  float coverage = smoothstep(0.0, edge, band)
+    * (1.0 - smoothstep(1.0 - edge, 1.0, band))
+    * step(0.0, forward);
+  return vec3(band, forward - apexDistance, coverage);
+}
+
+vec3 getRainbowColor(float band, float colorThreshold) {
+  float scaledBand = clamp(band, 0.0, 1.0) * 6.0;
+  float firstBand = floor(scaledBand);
+  int index = int(min(
+    firstBand + step(colorThreshold, scaledBand - firstBand),
+    6.0
+  ));
+  return PRISM_COLORS[index];
+}
+
+// The glass: a thin bright rim, a beveled border lit on the side that faces
+// the light, an inner edge, a dark body, and glints where the light goes in
+// and out.
+float getGlass(
+  vec2 p,
+  float depth,
+  float size,
+  vec2 lightDirection,
+  vec2 entryPoint,
+  vec2 exitPoint,
+  float t
+) {
+  float bevel = 0.16 * size;
+  float faceAngle = atan(p.y, p.x) - PI / 6.0;
+  faceAngle = PI / 6.0 + PI / 3.0 * floor(faceAngle / (PI / 3.0) + 0.5);
+  vec2 faceNormal = vec2(cos(faceAngle), sin(faceAngle));
+  float facingLight = 0.5 - 0.5 * dot(faceNormal, lightDirection);
+
+  float rim = 1.0 - smoothstep(0.0, 0.004, depth);
+  float innerEdge = 1.0 - smoothstep(0.0, 0.0025, abs(depth - bevel));
+  float bevelFace = step(depth, bevel)
+    * (0.03 + 0.22 * facingLight)
+    * (1.0 - 0.6 * depth / bevel);
+  float body = 0.01 + 0.015 * (0.5 + 0.5 * snoise(p * 7.0 + t * 0.15));
+  float glint = exp(-pow(length(p - entryPoint) / 0.025, 2.0))
+    + exp(-pow(length(p - exitPoint) / 0.035, 2.0));
+
+  return max(
+    max(rim * (0.35 + 0.6 * facingLight), innerEdge * 0.22),
+    max(max(bevelFace, body), glint * step(depth, bevel))
+  );
+}
+
 // Returns the color in rgb and the dither density in a. Distances are in
 // units of the shorter screen side, so phones get the whole fan too.
 vec4 getPrism(
   vec2 screenUv,
-  vec2 splitPoint,
+  vec2 center,
   vec3 lightColor,
   float t,
   float colorThreshold,
   float lightThreshold
 ) {
-  vec2 point = (screenUv - splitPoint) * u_resolution
+  vec2 point = (screenUv - center) * u_resolution
     / min(u_resolution.x, u_resolution.y);
-  float beamAngle = u_prismBeam.x;
   float halfWidth = 0.5 * u_prismBeam.y;
   float softness = u_prismBeam.z;
   float brightness = u_prismBeam.w;
-  vec2 beamDirection = getDirection(beamAngle);
+  float size = u_prismGlass.x;
+  float refraction = u_prismGlass.y;
+  float redIndex = max(refraction - 0.5 * u_prismGlass.z, 1.0);
+  float violetIndex = refraction + 0.5 * u_prismGlass.z;
 
-  float along = dot(point, beamDirection);
-  if (along < 0.0) {
-    vec2 beamNormal = vec2(-beamDirection.y, beamDirection.x);
+  // Turn the prism so that light at rest goes through its top corner
+  // symmetrically (minimum deviation), the way a prism is set up on a bench.
+  // Everything below is in prism space.
+  float restDeviation = 2.0 * asin(clamp(0.5 * refraction, 0.0, 1.0))
+    - PI / 3.0;
+  float turn = radians(u_prismBeam.x) + 0.5 * restDeviation;
+  vec2 p = rotateVector(point, -turn);
+
+  // A hand-held flashlight: the beam sways around its aim point, and the
+  // light through the prism moves with it.
+  float sway = u_prismMotion.x * (
+    0.75 * sin(t * 1.1) + 0.25 * sin(t * 2.7 + 1.3)
+  );
+  vec2 direction = rotateVector(
+    getDirection(u_prismBeam.x + sway),
+    -turn
+  );
+  vec2 aimPoint = vec2(0.0, -u_prismGlass.w * size);
+  vec2 source = aimPoint - direction * 4.0;
+  vec2 entry = enterHexagon(source, direction, size);
+  bool hits = entry.x > 0.0;
+  vec2 entryPoint = source + direction * max(entry.x, 0.0);
+  vec2 entryNormal = getFaceNormal(int(entry.y));
+
+  // The light paths of the two ends of the rainbow.
+  vec2 redInside = refract(direction, entryNormal, 1.0 / redIndex);
+  vec2 violetInside = refract(direction, entryNormal, 1.0 / violetIndex);
+  vec2 redLeave = leaveHexagon(entryPoint, redInside, size);
+  vec2 violetLeave = leaveHexagon(entryPoint, violetInside, size);
+  vec2 redExit = entryPoint + redInside * redLeave.x;
+  vec2 violetExit = entryPoint + violetInside * violetLeave.x;
+  vec2 redOutside = refractOut(
+    redInside,
+    getFaceNormal(int(redLeave.y)),
+    redIndex
+  );
+  vec2 violetOutside = refractOut(
+    violetInside,
+    getFaceNormal(int(violetLeave.y)),
+    violetIndex
+  );
+  vec2 exitPoint = 0.5 * (redExit + violetExit);
+  float insideLength = 0.5 * (redLeave.x + violetLeave.x);
+
+  // A wave of light runs down the beam, through the glass, and out through
+  // the rainbow. Its position is the distance along the light path from the
+  // entry point.
+  float wavePosition = mod(t * 1.6, 4.5) - 1.5;
+  float depth = -getHexagonDistance(p, size);
+  float along = dot(p - entryPoint, direction);
+
+  if (depth > 0.0) {
+    float glass = getGlass(
+      p,
+      depth,
+      size,
+      direction,
+      entryPoint,
+      exitPoint,
+      t
+    );
+    if (!hits) {
+      return vec4(lightColor, glass);
+    }
+    // Inside the glass the white light starts to come apart.
+    vec3 fan = sampleFan(
+      p,
+      entryPoint,
+      redInside,
+      violetInside,
+      halfWidth,
+      softness
+    );
+    float travel = max(fan.y, 0.0);
+    float wave = u_prismMotion.y
+      * exp(-pow((travel - wavePosition) / 0.18, 2.0));
+    float light = brightness * fan.z * (0.85 + 0.6 * wave);
+    float white = 1.0 - 0.75 * smoothstep(
+      0.0,
+      insideLength,
+      travel
+    );
+    if (light > glass) {
+      vec3 color = lightThreshold < white
+        ? lightColor
+        : getRainbowColor(fan.x, colorThreshold);
+      return vec4(color, light);
+    }
+    return vec4(lightColor, glass);
+  }
+
+  if (!hits || along < 0.0) {
+    float wave = exp(-pow((along - wavePosition) / 0.18, 2.0));
+    brightness *= 1.0 + 0.6 * u_prismMotion.y * wave;
+    vec2 beamNormal = vec2(-direction.y, direction.x);
     // -1 on one edge of the beam, 1 on the other.
-    float across = dot(point, beamNormal) / max(halfWidth, 1e-4);
+    float across = dot(p - entryPoint, beamNormal) / max(halfWidth, 1e-4);
     float beam = 1.0 - smoothstep(1.0 - softness, 1.0, abs(across));
     // Light-beam texture: a brighter core, and long streaks that drift
-    // along the beam toward the split point.
+    // along the beam toward the prism.
     float core = 1.0 - 0.45 * across * across;
     float streaks = 0.5 + 0.5 * snoise(
       vec2(along * 3.0 - t * 0.9, across * 1.6)
@@ -546,43 +788,31 @@ vec4 getPrism(
     return vec4(lightColor, brightness * beam * grain);
   }
 
-  // The fan grows from an apex behind the split point, so it is exactly as
-  // wide as the beam where the two meet.
-  float halfSpread = 0.5 * u_prismFan.y * PI / 180.0;
-  vec2 fanDirection = getDirection(beamAngle + u_prismFan.x);
-  vec2 fanNormal = vec2(-fanDirection.y, fanDirection.x);
-  float apexDistance = halfWidth / tan(halfSpread);
-  vec2 fanPoint = point + fanDirection * apexDistance;
-  float angle = atan(
-    dot(fanPoint, fanNormal),
-    dot(fanPoint, fanDirection)
+  // The rainbow leaves the far face. It starts as wide as the light that
+  // reaches that face.
+  vec3 fan = sampleFan(
+    p,
+    exitPoint,
+    redOutside,
+    violetOutside,
+    halfWidth + 0.5 * length(redExit - violetExit),
+    softness
   );
-  // 0 on the red edge, 1 on the violet edge.
-  float band = (angle + halfSpread) / (2.0 * halfSpread);
-  float edge = max(0.5 * softness, 0.01);
-  float inside = smoothstep(0.0, edge, band)
-    * (1.0 - smoothstep(1.0 - edge, 1.0, band));
-  float travel = max(length(fanPoint) - apexDistance, 0.0);
-  float fade = 1.0 - smoothstep(0.2 * u_prismFan.z, u_prismFan.z, travel);
+  float travel = max(fan.y, 0.0);
+  float fade = 1.0 - smoothstep(0.2 * u_prismLight.x, u_prismLight.x, travel);
   float shimmer = 0.5 + 0.5 * snoise(
-    vec2(travel * 2.6 - t * 0.5, band * 3.0)
+    vec2(travel * 2.6 - t * 0.5, fan.x * 3.0)
   );
-  float density = brightness * inside * fade
-    * mix(1.0, shimmer, u_prismFan.w);
-
-  // Dither between neighboring colors, and from the light to the rainbow.
-  float scaledBand = clamp(band, 0.0, 1.0) * 6.0;
-  float firstBand = floor(scaledBand);
-  int index = int(min(
-    firstBand + step(colorThreshold, scaledBand - firstBand),
-    6.0
-  ));
-  float light = 1.0 - smoothstep(
-    u_prismLight.x,
-    u_prismLight.x + u_prismLight.y,
-    travel
+  float wave = u_prismMotion.y * exp(
+    -pow((insideLength + travel - wavePosition) / 0.3, 2.0)
   );
-  vec3 color = lightThreshold < light ? lightColor : PRISM_COLORS[index];
+  float density = brightness * fan.z * fade
+    * mix(1.0, shimmer, u_prismLight.y)
+    * (1.0 + wave);
+  // The wave carries some white light into the rainbow.
+  vec3 color = lightThreshold < 0.5 * wave
+    ? lightColor
+    : getRainbowColor(fan.x, colorThreshold);
   return vec4(color, density);
 }
 

@@ -32,37 +32,41 @@ export type DktFieldStyle =
 // The knobs of the Typeet prism. Distances are in units of the shorter
 // screen side; angles are in degrees, and positive angles point down.
 export type PrismSettings = {
-  splitX: number;
-  splitY: number;
+  prismX: number;
+  prismY: number;
+  prismSize: number;
+  refraction: number;
+  dispersion: number;
+  aim: number;
   beamAngle: number;
   beamWidth: number;
   beamSoftness: number;
   beamTexture: number;
   brightness: number;
-  fanBend: number;
-  fanSpread: number;
   fanLength: number;
   shimmer: number;
-  rainbowStart: number;
-  rainbowLength: number;
   speed: number;
+  sway: number;
+  wave: number;
 };
 
 export const defaultPrismSettings: PrismSettings = {
-  splitX: 0.14,
-  splitY: 0.27,
-  beamAngle: 11,
+  prismX: 0.12,
+  prismY: 0.25,
+  prismSize: 0.1,
+  refraction: 1.28,
+  dispersion: 0.4,
+  aim: 0.45,
+  beamAngle: -6,
   beamWidth: 0.02,
   beamSoftness: 0.45,
   beamTexture: 0.6,
   brightness: 1,
-  fanBend: 4,
-  fanSpread: 41,
   fanLength: 2.7,
   shimmer: 0.4,
-  rainbowStart: 0.01,
-  rainbowLength: 0.25,
-  speed: 0.6,
+  speed: 0.9,
+  sway: 4,
+  wave: 0.8,
 };
 
 type DitherPresetOptions = {
@@ -191,7 +195,7 @@ const ditherPresets = {
       light: "#8d949c",
       dark: "#ededef",
     },
-    mask: [defaultPrismSettings.splitX, defaultPrismSettings.splitY, 1.6],
+    mask: [defaultPrismSettings.prismX, defaultPrismSettings.prismY, 1.6],
     shape: "simplex",
     size: 1.65,
     scale: 1,
@@ -291,7 +295,7 @@ function getShaderPreset(
     variant === "typeet"
       ? {
           ...ditherPresets.typeet,
-          mask: [prism.splitX, prism.splitY, 1.6] satisfies DitherPreset["mask"],
+          mask: [prism.prismX, prism.prismY, 1.6] satisfies DitherPreset["mask"],
           speed: prism.speed,
         }
       : ditherPresets[variant];
@@ -380,17 +384,18 @@ export function getPresetUniforms(
       prism.beamSoftness,
       prism.brightness,
     ],
-    u_prismFan: [
-      prism.fanBend,
-      prism.fanSpread,
-      prism.fanLength,
-      prism.shimmer,
+    u_prismGlass: [
+      prism.prismSize,
+      prism.refraction,
+      prism.dispersion,
+      prism.aim,
     ],
     u_prismLight: [
-      prism.rainbowStart,
-      prism.rainbowLength,
+      prism.fanLength,
+      prism.shimmer,
       prism.beamTexture,
     ],
+    u_prismMotion: [prism.sway, prism.wave],
     u_colorBack: getShaderColorFromString(
       theme === "dark" ? "#101411" : "#f6f6f3",
     ),

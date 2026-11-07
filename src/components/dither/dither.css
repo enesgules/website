@@ -16,6 +16,11 @@
   --dither-active-opacity: 0.82;
 }
 
+/* On a dark page the prism is light, so it shows at full strength. */
+:root[data-theme="dark"] .dither-backdrop[data-variant="typeet"] {
+  --dither-active-opacity: 1;
+}
+
 .profile[data-quiet-dither="true"] .dither-backdrop {
   --quiet-field-mask: linear-gradient(
     to right,
