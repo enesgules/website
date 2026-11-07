@@ -621,8 +621,9 @@ vec3 getRainbowColor(float band, float colorThreshold) {
 }
 
 // The glass: a thin bright rim, a beveled border lit on the side that faces
-// the light, an inner edge, a dark body, and glints where the light goes in
-// and out.
+// the light, an inner edge, a dark body, and glints on the rim where the
+// light goes in and out. The glints stay on the rim, so they never cover the
+// light inside the glass.
 float getGlass(
   vec2 p,
   float depth,
@@ -649,7 +650,7 @@ float getGlass(
 
   return max(
     max(rim * (0.35 + 0.6 * facingLight), innerEdge * 0.22),
-    max(max(bevelFace, body), glint * step(depth, bevel))
+    max(max(bevelFace, body), min(glint, 1.0) * rim)
   );
 }
 
