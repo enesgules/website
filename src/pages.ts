@@ -45,10 +45,4 @@ export const pages: Page[] = [
     description: labDescription,
     lab: true,
   },
-  {
-    path: "/typeet-lab",
-    title: "Typeet prism lab · Abdullah Enes Gules",
-    description: labDescription,
-    lab: true,
-  },
 ];

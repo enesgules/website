@@ -47,12 +47,6 @@ const DktDitherLab = lazy(() =>
   })),
 );
 
-const TypeetLab = lazy(() =>
-  import("./components/typeet-lab/TypeetLab").then((module) => ({
-    default: module.TypeetLab,
-  })),
-);
-
 type ProfilePagesProps = {
   onNavigate: MouseEventHandler<HTMLAnchorElement>;
   pathname: string;
@@ -180,14 +174,6 @@ export function App({ initialPathname }: AppProps) {
     return (
       <Suspense fallback={null}>
         <DktDitherLab />
-      </Suspense>
-    );
-  }
-
-  if (pathname === "/typeet-lab") {
-    return (
-      <Suspense fallback={null}>
-        <TypeetLab />
       </Suspense>
     );
   }

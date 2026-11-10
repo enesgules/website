@@ -29,50 +29,9 @@ export type DktFieldStyle =
   | "card-cluster"
   | "card-pair";
 
-// The knobs of the Typeet prism. Distances are in units of the shorter
-// screen side; angles are in degrees, and positive angles point down.
-export type PrismSettings = {
-  prismX: number;
-  prismY: number;
-  prismSize: number;
-  refraction: number;
-  dispersion: number;
-  aim: number;
-  beamAngle: number;
-  beamWidth: number;
-  beamSoftness: number;
-  beamTexture: number;
-  brightness: number;
-  fanLength: number;
-  shimmer: number;
-  speed: number;
-  sway: number;
-  wave: number;
-};
-
-export const defaultPrismSettings: PrismSettings = {
-  prismX: 0.12,
-  prismY: 0.39,
-  prismSize: 0.11,
-  refraction: 1.05,
-  dispersion: 0.8,
-  aim: 0.6,
-  beamAngle: -1,
-  beamWidth: 0.02,
-  beamSoftness: 0.4,
-  beamTexture: 0.65,
-  brightness: 1,
-  fanLength: 3,
-  shimmer: 0.4,
-  speed: 1,
-  sway: 1,
-  wave: 0.8,
-};
-
 type DitherPresetOptions = {
   dktFieldStyle?: DktFieldStyle;
   idleColor?: string;
-  prism?: PrismSettings;
 };
 
 const dktFieldStyleValues = {
@@ -187,35 +146,32 @@ const ditherPresets = {
     offsetX: -0.3,
     offsetY: 0.36,
   },
-  // The shader draws Typeet as a prism: colorFront is the light before the
-  // split, and the mask center is the split point. PrismSettings set the
-  // mask center and speed; the pixel size is the idle size.
+  // The shader draws the Typeet beam and the Ministanbul metro lines around
+  // the mask center. The metro lines have their own colours.
   typeet: {
     colorFront: {
-      light: "#8d949c",
-      dark: "#ededef",
+      light: "#c63d5c",
+      dark: "#e0607c",
     },
-    mask: [defaultPrismSettings.prismX, defaultPrismSettings.prismY, 1.6],
+    mask: [0.18, 0.42, 0.95],
     shape: "simplex",
     size: 1.65,
     scale: 1,
-    speed: defaultPrismSettings.speed,
+    speed: 1,
     rotation: 0,
     offsetX: 0,
     offsetY: 0,
   },
-  // The shader draws the Ministanbul metro lines; speed 2 runs them in real
-  // seconds.
   ministanbul: {
     colorFront: {
       light: "#2a7ab5",
       dark: "#4a9fdc",
     },
-    mask: [0.78, 0.6, 0.75],
+    mask: [0.78, 0.6, 1],
     shape: "simplex",
-    size: 1.65,
+    size: 1.85,
     scale: 1,
-    speed: 2,
+    speed: 1,
     rotation: 0,
     offsetX: 0,
     offsetY: 0,
@@ -301,23 +257,15 @@ export type VariantWeights = [
   number,
 ];
 
-const prismFieldStyle = 5;
-const ministanbulFieldStyle = 6;
+const beamFieldStyle = 5;
+const metroLinesFieldStyle = 6;
 
 function getShaderPreset(
   variant: DitherVariant,
   theme: ColorTheme,
   options: DitherPresetOptions,
 ) {
-  const prism = options.prism ?? defaultPrismSettings;
-  const preset =
-    variant === "typeet"
-      ? {
-          ...ditherPresets.typeet,
-          mask: [prism.prismX, prism.prismY, 1.6] satisfies DitherPreset["mask"],
-          speed: prism.speed,
-        }
-      : ditherPresets[variant];
+  const preset = ditherPresets[variant];
 
   return {
     color: getShaderColorFromString(
@@ -384,11 +332,11 @@ function getFieldStyle(
     return dktFieldStyleValues[options.dktFieldStyle ?? "wave"];
   }
 
-  if (variant === "ministanbul") {
-    return ministanbulFieldStyle;
+  if (variant === "typeet") {
+    return beamFieldStyle;
   }
 
-  return variant === "typeet" ? prismFieldStyle : 0;
+  return variant === "ministanbul" ? metroLinesFieldStyle : 0;
 }
 
 export function getPresetUniforms(
@@ -399,27 +347,7 @@ export function getPresetUniforms(
   const presets = ditherVariants.map((variant) =>
     getShaderPreset(variant, theme, options),
   );
-  const prism = options.prism ?? defaultPrismSettings;
-
   return {
-    u_prismBeam: [
-      prism.beamAngle,
-      prism.beamWidth,
-      prism.beamSoftness,
-      prism.brightness,
-    ],
-    u_prismGlass: [
-      prism.prismSize,
-      prism.refraction,
-      prism.dispersion,
-      prism.aim,
-    ],
-    u_prismLight: [
-      prism.fanLength,
-      prism.shimmer,
-      prism.beamTexture,
-    ],
-    u_prismMotion: [prism.sway, prism.wave],
     u_colorBack: getShaderColorFromString(
       theme === "dark" ? "#101411" : "#f6f6f3",
     ),

@@ -16,13 +16,6 @@ uniform vec3 u_masks[7];
 uniform vec4 u_weights;
 // Weights of the DKT, Typeet and Ministanbul fields.
 uniform vec3 u_extraWeights;
-// Typeet prism: [angle, width, softness, brightness],
-// [size, refraction index, dispersion, aim],
-// [rainbow length, shimmer, beam texture], [sway in degrees, light wave].
-uniform vec4 u_prismBeam;
-uniform vec4 u_prismGlass;
-uniform vec3 u_prismLight;
-uniform vec2 u_prismMotion;
 uniform float u_transitionStyle;
 uniform float u_transitionProgress;
 uniform float u_targetIndex;
@@ -489,311 +482,26 @@ float getVariantWeight(int index) {
   return u_extraWeights[index - 4];
 }
 
-// The Typeet field: a beam of light comes in, reaches the split point
-// (the mask center), and leaves as a fan in the typeet.com prism colors.
-const vec3 PRISM_COLORS[7] = vec3[7](
-  vec3(1.0, 0.122, 0.22),
-  vec3(1.0, 0.451, 0.078),
-  vec3(1.0, 0.859, 0.161),
-  vec3(0.22, 0.949, 0.38),
-  vec3(0.102, 0.8, 1.0),
-  vec3(0.22, 0.322, 1.0),
-  vec3(0.62, 0.2, 1.0)
-);
+// The Typeet and Ministanbul fields. p is the cell position on the screen
+// (0 to 1, y down) and center is the mask center. Distances are in units of
+// the screen height.
 
-vec2 getDirection(float degrees) {
-  float radians = degrees * PI / 180.0;
-  return vec2(cos(radians), sin(radians));
-}
-
-vec2 rotateVector(vec2 v, float radians) {
-  float c = cos(radians);
-  float s = sin(radians);
-  return vec2(c * v.x - s * v.y, s * v.x + c * v.y);
-}
-
-// The prism is a hexagon with flat top and bottom faces and a vertex on
-// each side. The top two slanted faces meet at 60 degrees, like a bench
-// prism. r is the distance from the center to a face.
-float getHexagonDistance(vec2 p, float r) {
-  const vec3 k = vec3(-0.866025404, 0.5, 0.577350269);
-  p = abs(p);
-  p -= 2.0 * min(dot(k.xy, p), 0.0) * k.xy;
-  p -= vec2(clamp(p.x, -k.z * r, k.z * r), r);
-  return length(p) * sign(p.y);
-}
-
-// The outward normal of face k (y points down).
-vec2 getFaceNormal(int k) {
-  float angle = (30.0 + 60.0 * float(k)) * PI / 180.0;
-  return vec2(cos(angle), sin(angle));
-}
-
-// Where a ray from outside comes into the hexagon: x is the distance along
-// the ray, y the face. x is -1 when the ray misses.
-vec2 enterHexagon(vec2 origin, vec2 direction, float r) {
-  float enter = -1e9;
-  float leave = 1e9;
-  float face = 0.0;
-  for (int k = 0; k < 6; k++) {
-    vec2 normal = getFaceNormal(k);
-    float facing = dot(direction, normal);
-    float hit = (r - dot(origin, normal)) / facing;
-    if (facing < -1e-5 && hit > enter) {
-      enter = hit;
-      face = float(k);
-    } else if (facing > 1e-5) {
-      leave = min(leave, hit);
-    }
-  }
-  return enter < leave ? vec2(enter, face) : vec2(-1.0);
-}
-
-// Where a ray from inside goes out of the hexagon: x is the distance, y the
-// face.
-vec2 leaveHexagon(vec2 origin, vec2 direction, float r) {
-  float leave = 1e9;
-  float face = 0.0;
-  for (int k = 0; k < 6; k++) {
-    vec2 normal = getFaceNormal(k);
-    float facing = dot(direction, normal);
-    float hit = (r - dot(origin, normal)) / max(facing, 1e-5);
-    if (facing > 1e-5 && hit < leave) {
-      leave = hit;
-      face = float(k);
-    }
-  }
-  return vec2(leave, face);
-}
-
-// Light that goes out of glass with refraction index n. Past the critical
-// angle the light reflects inside; it then skims along the face, the limit
-// of the light that still gets out.
-vec2 refractOut(vec2 direction, vec2 normal, float n) {
-  vec2 refracted = refract(direction, -normal, n);
-  if (dot(refracted, refracted) < 1e-6) {
-    return normalize(direction - normal * dot(direction, normal));
-  }
-  return refracted;
-}
-
-// A fan of light that leaves a segment halfWidth wide around origin, with
-// red going along redDirection and violet along violetDirection. Returns
-// the band (0 red, 1 violet), the distance traveled past the origin, and the
-// edge-softened coverage of the band.
-vec3 sampleFan(
-  vec2 p,
-  vec2 origin,
-  vec2 redDirection,
-  vec2 violetDirection,
-  float halfWidth,
-  float softness
-) {
-  vec2 direction = normalize(redDirection + violetDirection);
-  vec2 normal = vec2(-direction.y, direction.x);
-  float halfSpread = max(
-    0.5 * acos(clamp(dot(redDirection, violetDirection), -1.0, 1.0)),
-    1e-3
+// Typeet: one soft band of light comes in from the top left and crosses the
+// field. It spreads a little, sways, and long streaks drift along it.
+float getBeam(vec2 p, vec2 center, float t) {
+  float aspect = u_resolution.x / u_resolution.y;
+  vec2 q = vec2((p.x - center.x) * aspect, p.y - center.y);
+  float angle = radians(26.0 + 3.0 * sin(t * 0.4));
+  vec2 direction = vec2(cos(angle), sin(angle));
+  float along = dot(q, direction);
+  float across = dot(q, vec2(-direction.y, direction.x));
+  float width = 0.05 + 0.05 * max(along + 0.6, 0.0);
+  float core = exp(-pow(across / width, 2.0));
+  float streaks = 0.5 + 0.5 * snoise(
+    vec2(along * 2.5 - t * 0.8, across / width * 2.5)
   );
-  // The fan grows from an apex behind the origin, so it is exactly
-  // halfWidth wide there.
-  float apexDistance = halfWidth / tan(halfSpread);
-  vec2 fanPoint = p - origin + direction * apexDistance;
-  float forward = dot(fanPoint, direction);
-  float angle = atan(dot(fanPoint, normal), forward);
-  float redSide = dot(redDirection, normal) < 0.0 ? -1.0 : 1.0;
-  float band = 0.5 - 0.5 * redSide * angle / halfSpread;
-  float edge = max(0.5 * softness, 0.01);
-  float coverage = smoothstep(0.0, edge, band)
-    * (1.0 - smoothstep(1.0 - edge, 1.0, band))
-    * step(0.0, forward);
-  return vec3(band, forward - apexDistance, coverage);
+  return core * (0.55 + 0.45 * streaks);
 }
-
-vec3 getRainbowColor(float band, float colorThreshold) {
-  float scaledBand = clamp(band, 0.0, 1.0) * 6.0;
-  float firstBand = floor(scaledBand);
-  int index = int(min(
-    firstBand + step(colorThreshold, scaledBand - firstBand),
-    6.0
-  ));
-  return PRISM_COLORS[index];
-}
-
-// The glass is flat: a thin outline, a faint body, and glints on the
-// outline where the light goes in and out.
-float getGlass(vec2 p, float depth, vec2 entryPoint, vec2 exitPoint, float t) {
-  float outline = 1.0 - smoothstep(0.0, 0.004, depth);
-  float body = 0.01 + 0.015 * (0.5 + 0.5 * snoise(p * 7.0 + t * 0.15));
-  float glint = exp(-pow(length(p - entryPoint) / 0.025, 2.0))
-    + exp(-pow(length(p - exitPoint) / 0.035, 2.0));
-  return max(body, outline * min(0.7 + glint, 1.0));
-}
-
-// Returns the color in rgb and the dither density in a. Distances are in
-// units of the shorter screen side, so phones get the whole fan too.
-vec4 getPrism(
-  vec2 screenUv,
-  vec2 center,
-  vec3 lightColor,
-  float t,
-  float colorThreshold,
-  float lightThreshold
-) {
-  vec2 point = (screenUv - center) * u_resolution
-    / min(u_resolution.x, u_resolution.y);
-  float halfWidth = 0.5 * u_prismBeam.y;
-  float softness = u_prismBeam.z;
-  float brightness = u_prismBeam.w;
-  float size = u_prismGlass.x;
-  float refraction = u_prismGlass.y;
-  float redIndex = max(refraction - 0.5 * u_prismGlass.z, 1.0);
-  float violetIndex = refraction + 0.5 * u_prismGlass.z;
-
-  // Turn the prism so that light at rest goes through its top corner
-  // symmetrically (minimum deviation), the way a prism is set up on a bench.
-  // Everything below is in prism space.
-  float restDeviation = 2.0 * asin(clamp(0.5 * refraction, 0.0, 1.0))
-    - PI / 3.0;
-  float turn = radians(u_prismBeam.x) + 0.5 * restDeviation;
-  vec2 p = rotateVector(point, -turn);
-
-  // A hand-held flashlight: the beam sways around its aim point, and the
-  // light through the prism moves with it.
-  float sway = u_prismMotion.x * (
-    0.75 * sin(t * 1.1) + 0.25 * sin(t * 2.7 + 1.3)
-  );
-  vec2 direction = rotateVector(
-    getDirection(u_prismBeam.x + sway),
-    -turn
-  );
-  vec2 aimPoint = vec2(0.0, -u_prismGlass.w * size);
-  vec2 source = aimPoint - direction * 4.0;
-  vec2 entry = enterHexagon(source, direction, size);
-  bool hits = entry.x > 0.0;
-  vec2 entryPoint = source + direction * max(entry.x, 0.0);
-  vec2 entryNormal = getFaceNormal(int(entry.y));
-
-  // The light paths of the two ends of the rainbow.
-  vec2 redInside = refract(direction, entryNormal, 1.0 / redIndex);
-  vec2 violetInside = refract(direction, entryNormal, 1.0 / violetIndex);
-  vec2 redLeave = leaveHexagon(entryPoint, redInside, size);
-  vec2 violetLeave = leaveHexagon(entryPoint, violetInside, size);
-  vec2 redExit = entryPoint + redInside * redLeave.x;
-  vec2 violetExit = entryPoint + violetInside * violetLeave.x;
-  vec2 redOutside = refractOut(
-    redInside,
-    getFaceNormal(int(redLeave.y)),
-    redIndex
-  );
-  vec2 violetOutside = refractOut(
-    violetInside,
-    getFaceNormal(int(violetLeave.y)),
-    violetIndex
-  );
-  vec2 exitPoint = 0.5 * (redExit + violetExit);
-  float insideLength = 0.5 * (redLeave.x + violetLeave.x);
-
-  // A wave of light runs down the beam, through the glass, and out through
-  // the rainbow. Its position is the distance along the light path from the
-  // entry point.
-  float wavePosition = mod(t * 1.6, 4.5) - 1.5;
-  float depth = -getHexagonDistance(p, size);
-  float along = dot(p - entryPoint, direction);
-
-  if (depth > 0.0) {
-    float glass = getGlass(p, depth, entryPoint, exitPoint, t);
-    if (!hits) {
-      return vec4(lightColor, glass);
-    }
-    // Inside the glass the white light starts to come apart.
-    vec3 fan = sampleFan(
-      p,
-      entryPoint,
-      redInside,
-      violetInside,
-      halfWidth,
-      softness
-    );
-    float travel = max(fan.y, 0.0);
-    float wave = u_prismMotion.y
-      * exp(-pow((travel - wavePosition) / 0.18, 2.0));
-    float light = brightness * fan.z * (0.85 + 0.6 * wave);
-    float white = 1.0 - 0.75 * smoothstep(
-      0.0,
-      insideLength,
-      travel
-    );
-    if (light > glass) {
-      vec3 color = lightThreshold < white
-        ? lightColor
-        : getRainbowColor(fan.x, colorThreshold);
-      return vec4(color, light);
-    }
-    return vec4(lightColor, glass);
-  }
-
-  // Outside the glass, the side nearer the entry is the incoming beam. The
-  // entry face is slanted, so part of the beam reaches it after the entry
-  // point.
-  bool nearEntry = along < size
-    && length(p - entryPoint) < length(p - exitPoint);
-  if (!hits || along < 0.0 || nearEntry) {
-    float wave = exp(-pow((along - wavePosition) / 0.18, 2.0));
-    brightness *= 1.0 + 0.6 * u_prismMotion.y * wave;
-    vec2 beamNormal = vec2(-direction.y, direction.x);
-    // -1 on one edge of the beam, 1 on the other.
-    float across = dot(p - entryPoint, beamNormal) / max(halfWidth, 1e-4);
-    float beam = 1.0 - smoothstep(1.0 - softness, 1.0, abs(across));
-    // Light-beam texture: a brighter core, and long streaks that drift
-    // along the beam toward the prism.
-    float core = 1.0 - 0.45 * across * across;
-    float streaks = 0.5 + 0.5 * snoise(
-      vec2(along * 3.0 - t * 0.9, across * 1.6)
-    );
-    float flicker = 0.5 + 0.5 * snoise(
-      vec2(along * 11.0 - t * 2.2, across * 3.5 + 7.0)
-    );
-    float grain = mix(
-      1.0,
-      core * (0.55 + 0.3 * streaks + 0.25 * flicker),
-      u_prismLight.z
-    );
-    return vec4(lightColor, brightness * beam * grain);
-  }
-
-  // The rainbow leaves the far face. It starts as wide as the light that
-  // reaches that face.
-  vec3 fan = sampleFan(
-    p,
-    exitPoint,
-    redOutside,
-    violetOutside,
-    halfWidth + 0.5 * length(redExit - violetExit),
-    softness
-  );
-  float travel = max(fan.y, 0.0);
-  float fade = 1.0 - smoothstep(0.2 * u_prismLight.x, u_prismLight.x, travel);
-  float shimmer = 0.5 + 0.5 * snoise(
-    vec2(travel * 2.6 - t * 0.5, fan.x * 3.0)
-  );
-  float wave = u_prismMotion.y * exp(
-    -pow((insideLength + travel - wavePosition) / 0.3, 2.0)
-  );
-  float density = brightness * fan.z * fade
-    * mix(1.0, shimmer, u_prismLight.y)
-    * (1.0 + wave);
-  // The wave carries some white light into the rainbow.
-  vec3 color = lightThreshold < 0.5 * wave
-    ? lightColor
-    : getRainbowColor(fan.x, colorThreshold);
-  return vec4(color, density);
-}
-
-// The Ministanbul field: four metro lines of the transit map in their own
-// colours, straight and at 45 degrees. Each line glows in dither and has a ring
-// at each station, and a train runs along it from station to station.
-// Distances are in units of the screen height.
 
 // How far p is from a line through a, b, c and d, how far along the line its
 // nearest point is, and the whole length of the line.
@@ -813,64 +521,43 @@ vec3 getMetroLine(vec2 p, vec2 a, vec2 b, vec2 c, vec2 d) {
   return nearest;
 }
 
-// Gives the colour and the shape.
-vec4 getMetro(vec2 uv, float t, vec3 ink) {
+// Ministanbul: four metro lines in the M1, M2, M3 and M4 map colours,
+// straight and at 45 degrees. They cross like lines on the network map. Each
+// line is thin with a soft glow, and pulses of light run along it at its own
+// speed. Returns the colour in rgb and the dither density in a.
+vec4 getMetroLines(vec2 p, vec2 center, float t) {
   float aspect = u_resolution.x / u_resolution.y;
-  vec2 p = vec2(uv.x * aspect, uv.y);
-  // The colours of M1, M2, M3 and M4 on the official network map.
+  vec2 q = vec2(p.x * aspect, p.y) - vec2(center.x * aspect, center.y);
   vec3 colours[4] = vec3[4](
     vec3(0.890, 0.129, 0.098),
     vec3(0.0, 0.651, 0.318),
     vec3(0.051, 0.663, 0.878),
     vec3(0.910, 0.314, 0.557)
   );
-  vec4 field = vec4(ink, 0.0);
+  vec4 field = vec4(colours[0], 0.0);
   for (int i = 0; i < 4; i++) {
     vec3 line;
+    // The ends are far off the screen, so no line stops on a wide screen.
     if (i == 0) {
-      line = getMetroLine(p, vec2(-0.1, 0.36), vec2(0.45 * aspect, 0.36),
-        vec2(0.45 * aspect + 0.2, 0.56), vec2(aspect + 0.1, 0.56));
+      line = getMetroLine(q, vec2(-0.15, -4.0), vec2(-0.15, -0.2),
+        vec2(0.15, 0.1), vec2(6.0, 0.1));
     } else if (i == 1) {
-      line = getMetroLine(p, vec2(-0.1, 0.82), vec2(0.3 * aspect, 0.82),
-        vec2(0.3 * aspect + 0.32, 0.5), vec2(aspect + 0.1, 0.5));
+      line = getMetroLine(q, vec2(-6.0, -0.05), vec2(-0.45, -0.05),
+        vec2(-0.05, 0.35), vec2(-0.05, 4.0));
     } else if (i == 2) {
-      line = getMetroLine(p, vec2(0.66 * aspect, -0.1), vec2(0.66 * aspect, 0.34),
-        vec2(0.66 * aspect + 0.22, 0.56), vec2(0.66 * aspect + 0.22, 1.1));
+      line = getMetroLine(q, vec2(-6.0, -0.3), vec2(0.0, -0.3),
+        vec2(0.5, 0.2), vec2(6.0, 0.2));
     } else {
-      line = getMetroLine(p, vec2(aspect + 0.1, 0.4), vec2(0.82 * aspect, 0.4),
-        vec2(0.82 * aspect - 0.28, 0.68), vec2(-0.1, 0.68));
+      line = getMetroLine(q, vec2(-6.0, 0.25), vec2(-0.7, 0.25),
+        vec2(-0.35, -0.1), vec2(-0.35, -4.0));
     }
-    // one train of three cars that runs to the next station in four seconds
-    // and waits there for almost three, just short of the station's ring
-    float run = t * 0.15 + float(i) * 1.3;
-    float speed = sin(PI * clamp(fract(run) / 0.6, 0.0, 1.0));
-    float head = 0.084 + 0.2 * (floor(run) + smoothstep(0.0, 0.6, fract(run)));
-    float behind = mod(head - line.y, line.z);
-    if (behind < 0.1 && line.x < 0.008) {
-      // each car is a rounded body with three open windows; the first car has
-      // a round nose
-      vec2 car = vec2(mod(behind, 0.034) - 0.016, line.x);
-      float radius = behind < 0.016 ? 0.0075 : 0.003;
-      if (roundedBoxDistance(car, vec2(0.016, 0.0075), radius) < 0.0) {
-        bool window = car.y < 0.0032 && abs(car.x) < 0.0115
-          && mod(car.x + 0.0115, 0.0083) < 0.0063;
-        return vec4(colours[i], window ? 0.0 : 1.0);
-      }
-    }
-    // a station every 0.2 along the line: a ring with an open middle
-    float station = length(vec2(mod(line.y, 0.2) - 0.1, line.x));
-    if (station < 0.0105) {
-      return vec4(colours[i], station < 0.0055 ? 0.0 : 1.0);
-    }
-    // the line with a dithered glow
-    float density = line.x < 0.0022 ? 0.85 : 0.3 * exp(-line.x * 55.0);
-    // while the train runs, the line glows behind it and its headlights light
-    // the track ahead
-    float trail = exp(-max(behind - 0.1, 0.0) * 12.0) * exp(-line.x * 70.0);
-    float ahead = mod(line.y - head, line.z);
-    float beam = exp(-ahead * 30.0) * (1.0 - smoothstep(0.0, 0.004 + ahead * 0.3, line.x));
-    density = max(density, (0.3 + 0.7 * speed) * trail);
-    density = max(density, 0.7 * speed * beam);
+    // A pulse every 1.6 along the line, so the long lines always have one
+    // on the screen.
+    float travel = t * 0.38 * (1.0 + 0.14 * float(i)) + 0.9 * float(i);
+    float gap = mod(line.y - travel, 1.6) - 0.8;
+    float pulse = exp(-pow(gap / 0.12, 2.0));
+    float density = line.x < 0.0035 ? 0.8 : 0.47 * exp(-line.x / 0.013);
+    density = max(density, 0.9 * pulse * exp(-line.x / 0.026));
     if (density > field.a) {
       field = vec4(colours[i], density);
     }
@@ -967,26 +654,14 @@ void main() {
     float shapeTime = 0.5 * u_time * motion.y;
     vec4 frontColor = u_colorFronts[i];
     float shape;
+    // Drawn on the dither cells, so every shape keeps whole pixels.
+    vec2 cellUv = vec2(0.5 + sampleUv.x, 0.5 - sampleUv.y);
     if (params.w > 5.5) {
-      // Drawn on the dither cells, so every shape keeps whole pixels.
-      vec4 metro = getMetro(
-        vec2(0.5 + sampleUv.x, 0.5 - sampleUv.y),
-        shapeTime,
-        frontColor.rgb
-      );
-      frontColor.rgb = metro.rgb;
-      shape = metro.a;
+      vec4 lines = getMetroLines(cellUv, u_masks[i].xy, shapeTime);
+      frontColor.rgb = lines.rgb;
+      shape = lines.a;
     } else if (params.w > 4.5) {
-      vec4 prism = getPrism(
-        sampleScreenUv,
-        u_masks[i].xy,
-        frontColor.rgb,
-        shapeTime,
-        fract(threshold + 0.5),
-        fract(threshold + 0.25)
-      );
-      frontColor.rgb = prism.rgb;
-      shape = prism.a;
+      shape = getBeam(cellUv, u_masks[i].xy, shapeTime);
     } else {
       shape = evaluateShape(
         shapeUv,

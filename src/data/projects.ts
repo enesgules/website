@@ -18,14 +18,14 @@ export const projects: ReadonlyArray<Project> = [
   {
     name: "Ministanbul",
     description:
-      "A pixel-art map of Istanbul with its metros, trams and ferries moving on their timetables.",
+      "A pixel-art map of Istanbul with its monuments and live transit.",
     href: "https://ministanbul.com",
     dither: "ministanbul",
   },
   {
     name: "Typeet",
     description:
-      "Type your language and English on one keyboard. Typeet adds the missing letters as you type.",
+      "Type in your language on an English keyboard. Typeet adds letters like ç for you.",
     href: "https://typeet.com",
     dither: "typeet",
   },

@@ -26,7 +26,7 @@ const accents = {
   hugeicons: "#6fae45",
   distributed: "#4267bd",
   dkt: "#92724c",
-  typeet: "#3852ff",
+  typeet: "#c63d5c",
   ministanbul: "#2a7ab5",
 } as const;
 
