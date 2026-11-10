@@ -25,7 +25,7 @@ export const projects: ReadonlyArray<Project> = [
   {
     name: "Typeet",
     description:
-      "Type in your language on an English keyboard. Typeet adds letters like ç for you.",
+      "Type on an English keyboard, and Typeet adds the special letters of your language.",
     href: "https://typeet.com",
     dither: "typeet",
   },
