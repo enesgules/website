@@ -8,14 +8,14 @@ uniform vec2 u_resolution;
 uniform float u_pixelRatio;
 
 uniform vec4 u_colorBack;
-uniform vec4 u_colorFronts[6];
-uniform vec4 u_params[6];
-uniform vec2 u_offsets[6];
-uniform vec2 u_motion[6];
-uniform vec3 u_masks[6];
+uniform vec4 u_colorFronts[7];
+uniform vec4 u_params[7];
+uniform vec2 u_offsets[7];
+uniform vec2 u_motion[7];
+uniform vec3 u_masks[7];
 uniform vec4 u_weights;
-// Weights of the DKT and Typeet fields.
-uniform vec2 u_extraWeights;
+// Weights of the DKT, Typeet and Ministanbul fields.
+uniform vec3 u_extraWeights;
 // Typeet prism: [angle, width, softness, brightness],
 // [size, refraction index, dispersion, aim],
 // [rainbow length, shimmer, beam texture], [sway in degrees, light wave].
@@ -486,7 +486,7 @@ float getVariantWeight(int index) {
   if (index < 4) {
     return u_weights[index];
   }
-  return index == 4 ? u_extraWeights.x : u_extraWeights.y;
+  return u_extraWeights[index - 4];
 }
 
 // The Typeet field: a beam of light comes in, reaches the split point
@@ -790,10 +790,98 @@ vec4 getPrism(
   return vec4(color, density);
 }
 
+// The Ministanbul field: four metro lines of the transit map in their own
+// colours, straight and at 45 degrees. Each line glows in dither and has a ring
+// at each station, and a train runs along it from station to station.
+// Distances are in units of the screen height.
+
+// How far p is from a line through a, b, c and d, how far along the line its
+// nearest point is, and the whole length of the line.
+vec3 getMetroLine(vec2 p, vec2 a, vec2 b, vec2 c, vec2 d) {
+  vec2 points[4] = vec2[4](a, b, c, d);
+  vec3 nearest = vec3(1e3, 0.0, 0.0);
+  for (int i = 0; i < 3; i++) {
+    vec2 edge = points[i + 1] - points[i];
+    float edgeLength = length(edge);
+    float along = clamp(dot(p - points[i], edge) / edgeLength, 0.0, edgeLength);
+    float gap = length(p - points[i] - edge * along / edgeLength);
+    if (gap < nearest.x) {
+      nearest.xy = vec2(gap, nearest.z + along);
+    }
+    nearest.z += edgeLength;
+  }
+  return nearest;
+}
+
+// Gives the colour and the shape.
+vec4 getMetro(vec2 uv, float t, vec3 ink) {
+  float aspect = u_resolution.x / u_resolution.y;
+  vec2 p = vec2(uv.x * aspect, uv.y);
+  // The colours of M1, M2, M3 and M4 on the official network map.
+  vec3 colours[4] = vec3[4](
+    vec3(0.890, 0.129, 0.098),
+    vec3(0.0, 0.651, 0.318),
+    vec3(0.051, 0.663, 0.878),
+    vec3(0.910, 0.314, 0.557)
+  );
+  vec4 field = vec4(ink, 0.0);
+  for (int i = 0; i < 4; i++) {
+    vec3 line;
+    if (i == 0) {
+      line = getMetroLine(p, vec2(-0.1, 0.36), vec2(0.45 * aspect, 0.36),
+        vec2(0.45 * aspect + 0.2, 0.56), vec2(aspect + 0.1, 0.56));
+    } else if (i == 1) {
+      line = getMetroLine(p, vec2(-0.1, 0.82), vec2(0.3 * aspect, 0.82),
+        vec2(0.3 * aspect + 0.32, 0.5), vec2(aspect + 0.1, 0.5));
+    } else if (i == 2) {
+      line = getMetroLine(p, vec2(0.66 * aspect, -0.1), vec2(0.66 * aspect, 0.34),
+        vec2(0.66 * aspect + 0.22, 0.56), vec2(0.66 * aspect + 0.22, 1.1));
+    } else {
+      line = getMetroLine(p, vec2(aspect + 0.1, 0.4), vec2(0.82 * aspect, 0.4),
+        vec2(0.82 * aspect - 0.28, 0.68), vec2(-0.1, 0.68));
+    }
+    // one train of three cars that runs to the next station in four seconds
+    // and waits there for almost three, just short of the station's ring
+    float run = t * 0.15 + float(i) * 1.3;
+    float speed = sin(PI * clamp(fract(run) / 0.6, 0.0, 1.0));
+    float head = 0.084 + 0.2 * (floor(run) + smoothstep(0.0, 0.6, fract(run)));
+    float behind = mod(head - line.y, line.z);
+    if (behind < 0.1 && line.x < 0.008) {
+      // each car is a rounded body with three open windows; the first car has
+      // a round nose
+      vec2 car = vec2(mod(behind, 0.034) - 0.016, line.x);
+      float radius = behind < 0.016 ? 0.0075 : 0.003;
+      if (roundedBoxDistance(car, vec2(0.016, 0.0075), radius) < 0.0) {
+        bool window = car.y < 0.0032 && abs(car.x) < 0.0115
+          && mod(car.x + 0.0115, 0.0083) < 0.0063;
+        return vec4(colours[i], window ? 0.0 : 1.0);
+      }
+    }
+    // a station every 0.2 along the line: a ring with an open middle
+    float station = length(vec2(mod(line.y, 0.2) - 0.1, line.x));
+    if (station < 0.0105) {
+      return vec4(colours[i], station < 0.0055 ? 0.0 : 1.0);
+    }
+    // the line with a dithered glow
+    float density = line.x < 0.0022 ? 0.85 : 0.3 * exp(-line.x * 55.0);
+    // while the train runs, the line glows behind it and its headlights light
+    // the track ahead
+    float trail = exp(-max(behind - 0.1, 0.0) * 12.0) * exp(-line.x * 70.0);
+    float ahead = mod(line.y - head, line.z);
+    float beam = exp(-ahead * 30.0) * (1.0 - smoothstep(0.0, 0.004 + ahead * 0.3, line.x));
+    density = max(density, (0.3 + 0.7 * speed) * trail);
+    density = max(density, 0.7 * speed * beam);
+    if (density > field.a) {
+      field = vec4(colours[i], density);
+    }
+  }
+  return field;
+}
+
 void main() {
   float sharedPxSize = 0.0;
   float maxWeight = 0.0;
-  for (int i = 0; i < 6; i++) {
+  for (int i = 0; i < 7; i++) {
     float weight = getVariantWeight(i);
     sharedPxSize += weight * u_params[i].y;
     maxWeight = max(maxWeight, weight);
@@ -834,7 +922,7 @@ void main() {
   float sourceOpacity = 0.0;
   float targetOpacity = 0.0;
 
-  for (int i = 0; i < 6; i++) {
+  for (int i = 0; i < 7; i++) {
     float weight = getVariantWeight(i);
     if (weight <= 0.0001) {
       continue;
@@ -879,7 +967,16 @@ void main() {
     float shapeTime = 0.5 * u_time * motion.y;
     vec4 frontColor = u_colorFronts[i];
     float shape;
-    if (params.w > 4.5) {
+    if (params.w > 5.5) {
+      // Drawn on the dither cells, so every shape keeps whole pixels.
+      vec4 metro = getMetro(
+        vec2(0.5 + sampleUv.x, 0.5 - sampleUv.y),
+        shapeTime,
+        frontColor.rgb
+      );
+      frontColor.rgb = metro.rgb;
+      shape = metro.a;
+    } else if (params.w > 4.5) {
       vec4 prism = getPrism(
         sampleScreenUv,
         u_masks[i].xy,

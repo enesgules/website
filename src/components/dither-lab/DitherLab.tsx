@@ -12,6 +12,7 @@ const variants = [
   { label: "Distributed", value: "distributed" },
   { label: "DKT", value: "dkt" },
   { label: "Typeet", value: "typeet" },
+  { label: "Ministanbul", value: "ministanbul" },
 ] satisfies { label: string; value: DitherVariant }[];
 
 const transitionGroups = [

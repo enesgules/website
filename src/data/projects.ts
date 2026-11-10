@@ -16,6 +16,13 @@ export const projects: ReadonlyArray<Project> = [
     dither: "context7",
   },
   {
+    name: "Ministanbul",
+    description:
+      "A pixel-art map of Istanbul with its metros, trams and ferries moving on their timetables.",
+    href: "https://ministanbul.com",
+    dither: "ministanbul",
+  },
+  {
     name: "Typeet",
     description:
       "Type your language and English on one keyboard. Typeet adds the missing letters as you type.",

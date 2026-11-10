@@ -13,7 +13,8 @@ export type DitherVariant =
   | "hugeicons"
   | "distributed"
   | "dkt"
-  | "typeet";
+  | "typeet"
+  | "ministanbul";
 
 type DitherBackdropProps = {
   idleColor?: string;

@@ -102,6 +102,13 @@
   opacity: var(--accent-typeet-opacity);
 }
 
+.dither-field[data-variant="ministanbul"]::before {
+  --dither-x: 78%;
+  --dither-y: 60%;
+  background-color: var(--accent-ministanbul);
+  opacity: var(--accent-ministanbul-opacity);
+}
+
 .dither-field:not(.dither-field--fallback)::before {
   opacity: 0;
 }

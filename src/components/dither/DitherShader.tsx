@@ -204,6 +204,22 @@ const ditherPresets = {
     offsetX: 0,
     offsetY: 0,
   },
+  // The shader draws the Ministanbul metro lines; speed 2 runs them in real
+  // seconds.
+  ministanbul: {
+    colorFront: {
+      light: "#2a7ab5",
+      dark: "#4a9fdc",
+    },
+    mask: [0.78, 0.6, 0.75],
+    shape: "simplex",
+    size: 1.65,
+    scale: 1,
+    speed: 2,
+    rotation: 0,
+    offsetX: 0,
+    offsetY: 0,
+  },
 } satisfies Record<DitherVariant, DitherPreset>;
 
 type ShaderPreferences = {
@@ -272,6 +288,7 @@ const ditherVariants = [
   "distributed",
   "dkt",
   "typeet",
+  "ministanbul",
 ] satisfies DitherVariant[];
 
 export type VariantWeights = [
@@ -281,9 +298,11 @@ export type VariantWeights = [
   number,
   number,
   number,
+  number,
 ];
 
 const prismFieldStyle = 5;
+const ministanbulFieldStyle = 6;
 
 function getShaderPreset(
   variant: DitherVariant,
@@ -326,17 +345,18 @@ export function getVariantWeights(
     variant === "distributed" ? 1 : 0,
     variant === "dkt" ? 1 : 0,
     variant === "typeet" ? 1 : 0,
+    variant === "ministanbul" ? 1 : 0,
   ];
 }
 
 export function getEmptyWeights(): VariantWeights {
-  return [0, 0, 0, 0, 0, 0];
+  return [0, 0, 0, 0, 0, 0, 0];
 }
 
 export function getWeightUniforms(weights: VariantWeights) {
   return {
     u_weights: weights.slice(0, 4),
-    u_extraWeights: weights.slice(4, 6),
+    u_extraWeights: weights.slice(4, 7),
   };
 }
 
@@ -362,6 +382,10 @@ function getFieldStyle(
 ) {
   if (variant === "dkt") {
     return dktFieldStyleValues[options.dktFieldStyle ?? "wave"];
+  }
+
+  if (variant === "ministanbul") {
+    return ministanbulFieldStyle;
   }
 
   return variant === "typeet" ? prismFieldStyle : 0;
